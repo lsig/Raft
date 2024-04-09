@@ -9,11 +9,34 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-type Server struct{}
+type State int
+
+const (
+	Leader State = iota
+    Candidate
+	Follower
+	Failed
+)
+
+type Server struct {
+	Address  string
+	Messages chan *Packet
+	Commands chan string
+	State    State
+}
 
 type Packet struct {
 	Address string
 	Content *miniraft.Raft
+}
+
+func NewServer(address string) *Server {
+	return &Server{
+		Address:  address,
+		Messages: make(chan *Packet, 128),
+		Commands: make(chan string, 128),
+		State:    Follower,
+	}
 }
 
 func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
