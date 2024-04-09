@@ -170,6 +170,7 @@ func (s *Server) MessageProcessing() {
 }
 
 func (s *Server) StartTimeout() {
+	// need to check if server is leader
 	timer := time.NewTimer(s.Timeout)
 	for {
 		select {
