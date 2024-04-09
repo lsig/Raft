@@ -1,0 +1,50 @@
+// protoc --proto_path=. --go_out=. --go_opt=paths=source_relative miniraft.proto
+syntax = "proto3";
+package miniraft;
+
+option go_package = "github.com/mkyas/miniraft";
+
+message LogEntry {
+	uint64 Index=1;
+	uint64 Term=2;
+	string CommandName=3; // Empty string is noop
+}
+
+// AppendEntries RPC
+message AppendEntriesRequest {
+	uint64 Term=1;
+	uint64 PrevLogIndex=2;
+	uint64 PrevLogTerm=3;
+	uint64 LeaderCommit=4;
+	string LeaderId=5;
+	repeated LogEntry Entries=6;
+}
+
+message AppendEntriesResponse {
+	uint64 Term=1;
+	bool   Success=4;
+}
+
+// RequestVote RPC
+message RequestVoteRequest {
+	uint64 Term=1;
+	uint64 LastLogIndex=2;
+	uint64 LastLogTerm=3;
+	string CandidateName=4;
+}
+
+message RequestVoteResponse {
+	uint64 Term=1;
+	bool VoteGranted=2;
+}
+
+// Wrapper
+message Raft {
+	oneof Message {
+	      AppendEntriesRequest AppendEntriesRequest=1;
+	      AppendEntriesResponse AppendEntriesResponse=2;
+	      RequestVoteRequest RequestVoteRequest=3;
+	      RequestVoteResponse RequestVoteResponse=4;
+	      string CommandName=5;
+	}
+}
