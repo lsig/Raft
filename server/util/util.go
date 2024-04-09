@@ -6,10 +6,18 @@ import (
 	"strings"
 )
 
-func FindNodesFromFile(filename string, myAddress string) (nodes []string) {
+func FindNodesAndAddressFromArgs() (nodes []string, address string) {
+	// handle invalid program arguments
+	if len(os.Args) != 3 {
+		fmt.Println("Usage: go run raftserver.go server-host:server-port filename")
+		os.Exit(1)
+	}
+	address = os.Args[1]
+	file := os.Args[2]
+
 	nodes = []string{}
 
-	fileBytes, err := os.ReadFile(filename)
+	fileBytes, err := os.ReadFile(file)
 	if err != nil {
 		fmt.Printf("error: %s\n", err.Error())
 		os.Exit(1)
@@ -20,7 +28,7 @@ func FindNodesFromFile(filename string, myAddress string) (nodes []string) {
 
 	servers := strings.Split(contents, "\n")
 	for _, s := range servers {
-		if s != myAddress {
+		if s != address {
 			nodes = append(nodes, s)
 		}
 	}
