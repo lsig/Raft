@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/lsig/Raft/server/pb"
+	miniraft "github.com/lsig/Raft/server/pb"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -83,7 +83,7 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 }
 
 func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
-	bs := make([]byte, 1024)
+	bs := make([]byte, 65536)
 	n, addr, err := conn.ReadFromUDP(bs)
 	if err != nil {
 		log.Println("Failed to read from udp buffer")
@@ -99,6 +99,30 @@ func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
 	return packet, nil
 }
 
+func (s *Server) Start() {
+	go s.MessageProcessing()
+	go s.CommandProcessing()
+
+	serverAddr, err := net.ResolveUDPAddr("udp", s.Address)
+
+	if err != nil {
+		log.Fatal("Failed to resolve server address", err)
+	}
+
+	conn, err := net.ListenUDP("udp", serverAddr)
+
+	if err != nil {
+		log.Fatal("Failed to listen to udp", err)
+	}
+
+	defer conn.Close()
+
+	log.Printf("Server listening on %s\n", s.Address)
+	for {
+		s.ReceiveMessage(conn)
+	}
+}
+
 func (s *Server) MessageProcessing() {
 	for packet := range s.Messages {
 		switch msg := packet.Content.Message.(type) {
@@ -112,6 +136,8 @@ func (s *Server) MessageProcessing() {
 			continue
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
+		default:
+			fmt.Println(msg)
 		}
 	}
 

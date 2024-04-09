@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/lsig/Raft/server/core"
 	"github.com/lsig/Raft/server/util"
 )
 
@@ -14,15 +15,20 @@ func main() {
 		return
 	}
 
-	server := os.Args[1]
+	address := os.Args[1]
 	file := os.Args[2]
 
-	err := util.AppendToFile(file, server)
+	nodes := util.FindNodesFromFile(file, address)
+	for _, n := range nodes {
+		fmt.Printf("node: %s\n", n)
+	}
+
+	err := util.AppendToFile(fmt.Sprintf("%s.log", address), address)
 
 	if err != nil {
 		log.Fatal("Error writing server config to file", err)
 	}
 
-	fmt.Println(server)
-	fmt.Println(file)
+	server := core.NewServer(address)
+	server.Start()
 }
