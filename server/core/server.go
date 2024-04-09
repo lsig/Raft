@@ -83,7 +83,7 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 }
 
 func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
-	bs := make([]byte, 1024)
+	bs := make([]byte, 65536)
 	n, addr, err := conn.ReadFromUDP(bs)
 	if err != nil {
 		log.Println("Failed to read from udp buffer")
@@ -97,6 +97,30 @@ func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
 	err = proto.Unmarshal(bs[0:n], packet.Content)
 
 	return packet, nil
+}
+
+func (s *Server) Start() {
+	go s.MessageProcessing()
+	go s.CommandProcessing()
+
+	serverAddr, err := net.ResolveUDPAddr("udp", s.Address)
+
+	if err != nil {
+		log.Fatal("Failed to resolve server address", err)
+	}
+
+	conn, err := net.ListenUDP("udp", serverAddr)
+
+	if err != nil {
+		log.Fatal("Failed to listen to udp", err)
+	}
+
+	defer conn.Close()
+
+	log.Printf("Server listening on %s\n", s.Address)
+	for {
+		s.ReceiveMessage(conn)
+	}
 }
 
 func (s *Server) MessageProcessing() {
@@ -113,7 +137,7 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
 		default:
-			fmt.Printf("msg: %v\n", msg)
+			fmt.Println(msg)
 		}
 	}
 
