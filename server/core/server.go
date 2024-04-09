@@ -55,6 +55,8 @@ func NewServer(address string, nodes []string) *Server {
 		Address:     address,
 		Messages:    make(chan *Packet, 128),
 		Commands:    make(chan string, 128),
+		TimeoutDone: make(chan struct{}),
+		TimeoutReset: make(chan struct{}),
 		Nodes:       dict,
 		LeaderId:    -1,
 		Timeout:     time.Duration(rand.IntN(300)+150) * time.Millisecond,
