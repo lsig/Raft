@@ -103,7 +103,7 @@ func (s *Server) MessageProcessing() {
 	for packet := range s.Messages {
 		switch msg := packet.Content.Message.(type) {
 		case *miniraft.Raft_CommandName:
-			continue
+			s.HandleClientCommand(packet.Address, msg.CommandName)
 		case *miniraft.Raft_RequestVoteRequest:
 			continue
 		case *miniraft.Raft_RequestVoteResponse:
