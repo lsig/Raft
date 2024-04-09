@@ -180,7 +180,7 @@ func (s *Server) StartTimeout() {
 			if !timer.Stop() {
 				<-timer.C
 			}
-			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond,)
+			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond)
 		}
 	}
 }
