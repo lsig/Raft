@@ -52,21 +52,21 @@ func NewServer(address string, nodes []string) *Server {
 	}
 
 	return &Server{
-		Address:     address,
-		Messages:    make(chan *Packet, 128),
-		Commands:    make(chan string, 128),
-		TimeoutDone: make(chan struct{}),
+		Address:      address,
+		Messages:     make(chan *Packet, 128),
+		Commands:     make(chan string, 128),
+		TimeoutDone:  make(chan struct{}),
 		TimeoutReset: make(chan struct{}),
-		Nodes:       dict,
-		LeaderId:    -1,
-		Timeout:     time.Duration(rand.IntN(300)+150) * time.Millisecond,
-		State:       Follower,
-		CurrentTerm: 0,
-		VotedFor:    -1,
-		CommitIndex: 0,
-		LastApplied: 0,
-		NextIndex:   nil,
-		MatchIndex:  nil,
+		Nodes:        dict,
+		LeaderId:     -1,
+		Timeout:      time.Duration(rand.IntN(300)+150) * time.Millisecond,
+		State:        Follower,
+		CurrentTerm:  0,
+		VotedFor:     -1,
+		CommitIndex:  0,
+		LastApplied:  0,
+		NextIndex:    nil,
+		MatchIndex:   nil,
 	}
 }
 
