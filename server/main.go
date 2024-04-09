@@ -18,15 +18,17 @@ func main() {
 	address := os.Args[1]
 	file := os.Args[2]
 
-	err := util.AppendToFile(file, address)
+	nodes := util.FindNodesFromFile(file, address)
+	for _, n := range nodes {
+		fmt.Printf("node: %s\n", n)
+	}
+
+	err := util.AppendToFile(fmt.Sprintf("%s.log", address), address)
 
 	if err != nil {
 		log.Fatal("Error writing server config to file", err)
 	}
 
-	fmt.Println(address)
-	fmt.Println(file)
-
 	server := core.NewServer(address)
-    server.Start()
+	server.Start()
 }

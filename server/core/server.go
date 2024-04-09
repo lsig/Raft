@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/lsig/Raft/server/pb"
+	miniraft "github.com/lsig/Raft/server/pb"
 	"google.golang.org/protobuf/proto"
 )
 
