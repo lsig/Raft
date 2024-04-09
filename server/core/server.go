@@ -13,16 +13,23 @@ type State int
 
 const (
 	Leader State = iota
-    Candidate
+	Candidate
 	Follower
 	Failed
 )
 
 type Server struct {
-	Address  string
-	Messages chan *Packet
-	Commands chan string
-	State    State
+	Address     string
+	Messages    chan *Packet
+	Commands    chan string
+	State       State
+	CurrentTerm int
+	VotedFor    int
+	Log         []miniraft.LogEntry
+	CommitIndex int
+	LastApplied int
+	NextIndex   []int
+	MatchIndex  []int
 }
 
 type Packet struct {
@@ -32,10 +39,16 @@ type Packet struct {
 
 func NewServer(address string) *Server {
 	return &Server{
-		Address:  address,
-		Messages: make(chan *Packet, 128),
-		Commands: make(chan string, 128),
-		State:    Follower,
+		Address:     address,
+		Messages:    make(chan *Packet, 128),
+		Commands:    make(chan string, 128),
+		State:       Follower,
+		CurrentTerm: 0,
+		VotedFor:    -1,
+		CommitIndex: 0,
+		LastApplied: 0,
+		NextIndex:   nil,
+        MatchIndex: nil,
 	}
 }
 
@@ -84,4 +97,16 @@ func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
 	err = proto.Unmarshal(bs[0:n], packet.Content)
 
 	return packet, nil
+}
+
+func (s *Server) MessageProcessing() {
+
+}
+
+func (s *Server) CommandProcessing() {
+
+}
+
+func (s *Server) SendingMessages() {
+
 }
