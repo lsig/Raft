@@ -3,7 +3,10 @@ package core
 import (
 	"fmt"
 	"log"
+	"math/rand/v2"
 	"net"
+	"strconv"
+	"time"
 
 	miniraft "github.com/lsig/Raft/server/pb"
 	"google.golang.org/protobuf/proto"
@@ -19,19 +22,22 @@ const (
 )
 
 type Server struct {
-	Address     string
-	Messages    chan *Packet
-	Commands    chan string
-	Nodes       []string
-	LeaderIndex int
-	State       State
-	CurrentTerm int
-	VotedFor    int
-	Log         []miniraft.LogEntry
-	CommitIndex int
-	LastApplied int
-	NextIndex   []int
-	MatchIndex  []int
+	Address      string
+	Messages     chan *Packet
+	Commands     chan string
+	TimeoutReset chan struct{}
+	TimeoutDone  chan struct{}
+	Nodes        map[string]string
+	LeaderId     int
+	Timeout      time.Duration
+	State        State
+	CurrentTerm  uint64
+	VotedFor     int
+	Log          []miniraft.LogEntry
+	CommitIndex  int
+	LastApplied  int
+	NextIndex    []int
+	MatchIndex   []int
 }
 
 type Packet struct {
@@ -40,12 +46,18 @@ type Packet struct {
 }
 
 func NewServer(address string, nodes []string) *Server {
+	dict := map[string]string{}
+	for idx, addr := range nodes {
+		dict[addr] = strconv.Itoa(idx)
+	}
+
 	return &Server{
 		Address:     address,
 		Messages:    make(chan *Packet, 128),
 		Commands:    make(chan string, 128),
-		Nodes:       nodes,
-		LeaderIndex: -1,
+		Nodes:       dict,
+		LeaderId:    -1,
+		Timeout:     time.Duration(rand.IntN(300)+150) * time.Millisecond,
 		State:       Follower,
 		CurrentTerm: 0,
 		VotedFor:    -1,
@@ -114,6 +126,8 @@ func (s *Server) ReceiveMessage(conn *net.UDPConn) error {
 func (s *Server) Start() {
 	go s.MessageProcessing()
 	go s.CommandProcessing()
+	go s.StartTimeout()
+	go s.WaitForTimeout()
 
 	serverAddr, err := net.ResolveUDPAddr("udp", s.Address)
 
@@ -145,7 +159,7 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_RequestVoteResponse:
 			continue
 		case *miniraft.Raft_AppendEntriesRequest:
-			continue
+			s.TimeoutReset <- struct{}{}
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
 		default:
@@ -153,6 +167,22 @@ func (s *Server) MessageProcessing() {
 		}
 	}
 
+}
+
+func (s *Server) StartTimeout() {
+	timer := time.NewTimer(s.Timeout)
+	for {
+		select {
+		case <-timer.C:
+			s.TimeoutDone <- struct{}{}
+			timer.Reset(s.Timeout)
+		case <-s.TimeoutReset:
+			if !timer.Stop() {
+				<-timer.C
+			}
+			timer.Reset(s.Timeout)
+		}
+	}
 }
 
 func (s *Server) CommandProcessing() {
@@ -170,6 +200,27 @@ func (s *Server) CommandProcessing() {
 	}
 }
 
-func (s *Server) SendingMessages() {
+func (s *Server) WaitForTimeout() {
+	for range s.TimeoutDone {
+		s.State = Candidate
 
+		lastIndex := len(s.Log) - 1
+
+		details := &miniraft.RequestVoteRequest{
+			Term:          s.CurrentTerm + 1,
+			CandidateName: s.Nodes[s.Address],
+			LastLogIndex:  uint64(lastIndex),
+			LastLogTerm:   s.Log[lastIndex].Term,
+		}
+
+		message := &miniraft.Raft{
+			Message: &miniraft.Raft_RequestVoteRequest{
+				RequestVoteRequest: details,
+			},
+		}
+
+		for addr := range s.Nodes {
+			s.SendMessage(addr, message)
+		}
+	}
 }
