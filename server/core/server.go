@@ -48,7 +48,7 @@ func NewServer(address string) *Server {
 		CommitIndex: 0,
 		LastApplied: 0,
 		NextIndex:   nil,
-        MatchIndex: nil,
+		MatchIndex:  nil,
 	}
 }
 
