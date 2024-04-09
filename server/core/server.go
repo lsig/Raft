@@ -175,12 +175,12 @@ func (s *Server) StartTimeout() {
 		select {
 		case <-timer.C:
 			s.TimeoutDone <- struct{}{}
-			timer.Reset(s.Timeout)
+			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond)
 		case <-s.TimeoutReset:
 			if !timer.Stop() {
 				<-timer.C
 			}
-			timer.Reset(s.Timeout)
+			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond,)
 		}
 	}
 }
