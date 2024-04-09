@@ -17,12 +17,14 @@ func main() {
 	server := os.Args[1]
 	file := os.Args[2]
 
-	err := util.AppendToFile(file, server)
+	nodes := util.FindNodesFromFile(file, server)
+	for _, n := range nodes {
+		fmt.Printf("node: %s\n", n)
+	}
+
+	err := util.AppendToFile(fmt.Sprintf("%s.log", server), server)
 
 	if err != nil {
 		log.Fatal("Error writing server config to file", err)
 	}
-
-	fmt.Println(server)
-	fmt.Println(file)
 }

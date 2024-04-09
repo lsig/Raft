@@ -5,7 +5,7 @@ import (
 	"log"
 	"net"
 
-	"github.com/lsig/Raft/server/pb"
+	miniraft "github.com/lsig/Raft/server/pb"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -112,6 +112,8 @@ func (s *Server) MessageProcessing() {
 			continue
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
+		default:
+			fmt.Printf("msg: %v\n", msg)
 		}
 	}
 

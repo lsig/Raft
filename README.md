@@ -15,3 +15,7 @@ go run . <server-host>:<server-port> <filename>
 cd client
 go run . <server-host>:<server-port>
 ```
+
+## Acknowledgements
+
+[Converting bytes to string](https://golangdocs.com/golang-byte-array-to-string)
