@@ -22,6 +22,8 @@ type Server struct {
 	Address     string
 	Messages    chan *Packet
 	Commands    chan string
+	Nodes       []string
+	LeaderIndex int
 	State       State
 	CurrentTerm int
 	VotedFor    int
@@ -37,11 +39,13 @@ type Packet struct {
 	Content *miniraft.Raft
 }
 
-func NewServer(address string) *Server {
+func NewServer(address string, nodes []string) *Server {
 	return &Server{
 		Address:     address,
 		Messages:    make(chan *Packet, 128),
 		Commands:    make(chan string, 128),
+		Nodes:       nodes,
+		LeaderIndex: -1,
 		State:       Follower,
 		CurrentTerm: 0,
 		VotedFor:    -1,

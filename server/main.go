@@ -29,6 +29,6 @@ func main() {
 		log.Fatal("Error writing server config to file", err)
 	}
 
-	server := core.NewServer(address)
+	server := core.NewServer(address, nodes)
 	server.Start()
 }
