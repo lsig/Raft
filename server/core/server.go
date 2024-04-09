@@ -82,21 +82,29 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 	return nil
 }
 
-func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
+func (s *Server) ReceiveMessage(conn *net.UDPConn) error {
 	bs := make([]byte, 65536)
 	n, addr, err := conn.ReadFromUDP(bs)
 	if err != nil {
 		log.Println("Failed to read from udp buffer")
-		return &Packet{}, fmt.Errorf("failed to read from udp buffer: %w", err)
+		return fmt.Errorf("failed to read from udp buffer: %w", err)
 	}
 
 	packet := &Packet{
 		Address: addr.String(),
 		Content: &miniraft.Raft{},
 	}
+
 	err = proto.Unmarshal(bs[0:n], packet.Content)
 
-	return packet, nil
+	if err != nil {
+		log.Println("Failed to unmarshal message")
+		return fmt.Errorf("failed to read from udp buffer: %w", err)
+	}
+
+	s.Messages <- packet
+
+	return nil
 }
 
 func (s *Server) Start() {
