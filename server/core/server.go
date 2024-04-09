@@ -206,7 +206,7 @@ func (s *Server) CommandProcessing() {
 
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
-		s.State = Candidate
+		s.ChangeState(Candidate)
 
 		lastIndex := len(s.Log) - 1
 
@@ -225,27 +225,5 @@ func (s *Server) WaitForTimeout() {
 		for addr := range s.Nodes {
 			s.SendMessage(addr, message)
 		}
-	}
-}
-
-func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
-	lastIndex := len(s.Log) - 1
-
-	if lastIndex == -1 {
-		details := &miniraft.RequestVoteRequest{
-			Term:          s.CurrentTerm + 1,
-			CandidateName: s.Nodes[s.Address],
-			LastLogIndex:  uint64(0),
-			LastLogTerm:   0,
-		}
-		return details
-	} else {
-		details := &miniraft.RequestVoteRequest{
-			Term:          s.CurrentTerm + 1,
-			CandidateName: s.Nodes[s.Address],
-			LastLogIndex:  uint64(lastIndex),
-			LastLogTerm:   s.Log[lastIndex].Term,
-		}
-		return details
 	}
 }
