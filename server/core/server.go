@@ -3,12 +3,12 @@ package core
 import (
 	"fmt"
 	"log"
-	"math/rand/v2"
 	"net"
 	"strconv"
 	"time"
 
 	miniraft "github.com/lsig/Raft/server/pb"
+	"github.com/lsig/Raft/server/util"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -59,7 +59,7 @@ func NewServer(address string, nodes []string) *Server {
 		TimeoutReset: make(chan struct{}),
 		Nodes:        dict,
 		LeaderId:     -1,
-		Timeout:      time.Duration(rand.IntN(300)+150) * time.Millisecond,
+		Timeout:      util.GetRandomTimeout(),
 		State:        Follower,
 		CurrentTerm:  0,
 		VotedFor:     -1,
@@ -179,12 +179,12 @@ func (s *Server) StartTimeout() {
 		select {
 		case <-timer.C:
 			s.TimeoutDone <- struct{}{}
-			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond)
+			timer.Reset(util.GetRandomTimeout())
 		case <-s.TimeoutReset:
 			if !timer.Stop() {
 				<-timer.C
 			}
-			timer.Reset(time.Duration(rand.IntN(300)+150) * time.Millisecond)
+			timer.Reset(util.GetRandomTimeout())
 		}
 	}
 }

@@ -2,8 +2,10 @@ package util
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"os"
 	"strings"
+	"time"
 )
 
 func FindNodesAndAddressFromArgs() (nodes []string, address string) {
@@ -48,4 +50,9 @@ func AppendToFile(filename, text string) error {
 		return err
 	}
 	return nil
+}
+
+func GetRandomTimeout() time.Duration {
+	debugScale := 10
+	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
 }
