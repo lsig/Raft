@@ -100,11 +100,36 @@ func (s *Server) ReceiveMessage(conn *net.UDPConn) (*Packet, error) {
 }
 
 func (s *Server) MessageProcessing() {
+	for packet := range s.Messages {
+		switch msg := packet.Content.Message.(type) {
+		case *miniraft.Raft_CommandName:
+			continue
+		case *miniraft.Raft_RequestVoteRequest:
+			continue
+		case *miniraft.Raft_RequestVoteResponse:
+			continue
+		case *miniraft.Raft_AppendEntriesRequest:
+			continue
+		case *miniraft.Raft_AppendEntriesResponse:
+			continue
+		}
+	}
 
 }
 
 func (s *Server) CommandProcessing() {
-
+	for command := range s.Commands {
+		switch {
+		case command == "log":
+			continue
+		case command == "print":
+			continue
+		case command == "resume":
+			continue
+		case command == "suspend":
+			continue
+		}
+	}
 }
 
 func (s *Server) SendingMessages() {
