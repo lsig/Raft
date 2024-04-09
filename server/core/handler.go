@@ -19,3 +19,7 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 
 	s.SendMessage(address, packet)
 }
+
+func (s *Server) HandleVoteRequest(message *miniraft.Raft_RequestVoteRequest) {
+	fmt.Printf("received RVR: %v\n", message.RequestVoteRequest.CandidateName)
+}

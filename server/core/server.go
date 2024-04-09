@@ -158,7 +158,7 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_CommandName:
 			s.HandleClientCommand(packet.Address, msg.CommandName)
 		case *miniraft.Raft_RequestVoteRequest:
-			continue
+			s.HandleVoteRequest(msg)
 		case *miniraft.Raft_RequestVoteResponse:
 			continue
 		case *miniraft.Raft_AppendEntriesRequest:
