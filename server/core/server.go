@@ -63,6 +63,7 @@ func NewServer(address string, nodes []string) *Server {
 		State:        Follower,
 		CurrentTerm:  0,
 		VotedFor:     -1,
+		Log:          []miniraft.LogEntry{},
 		CommitIndex:  0,
 		LastApplied:  0,
 		NextIndex:    nil,
@@ -209,21 +210,42 @@ func (s *Server) WaitForTimeout() {
 
 		lastIndex := len(s.Log) - 1
 
+		if lastIndex == -1 {
+			lastIndex = 0
+		}
+
+		details := s.CreateVoteRequest()
+		message := &miniraft.Raft{
+			Message: &miniraft.Raft_RequestVoteRequest{
+				RequestVoteRequest: details,
+			},
+		}
+		fmt.Println("Timeout expired")
+
+		for addr := range s.Nodes {
+			s.SendMessage(addr, message)
+		}
+	}
+}
+
+func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
+	lastIndex := len(s.Log) - 1
+
+	if lastIndex == -1 {
+		details := &miniraft.RequestVoteRequest{
+			Term:          s.CurrentTerm + 1,
+			CandidateName: s.Nodes[s.Address],
+			LastLogIndex:  uint64(0),
+			LastLogTerm:   0,
+		}
+		return details
+	} else {
 		details := &miniraft.RequestVoteRequest{
 			Term:          s.CurrentTerm + 1,
 			CandidateName: s.Nodes[s.Address],
 			LastLogIndex:  uint64(lastIndex),
 			LastLogTerm:   s.Log[lastIndex].Term,
 		}
-
-		message := &miniraft.Raft{
-			Message: &miniraft.Raft_RequestVoteRequest{
-				RequestVoteRequest: details,
-			},
-		}
-
-		for addr := range s.Nodes {
-			s.SendMessage(addr, message)
-		}
+		return details
 	}
 }
