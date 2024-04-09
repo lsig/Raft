@@ -12,17 +12,8 @@ func main() {
 		fmt.Println("Usage: go run . <server-host>:<server-port>")
 		os.Exit(1)
 	}
-
 	server := os.Args[1]
 
 	c := client.NewClient(server)
-
-	message := "hello world"
-
-	err := c.SendMessage(message)
-	if err != nil {
-		fmt.Printf("error: %s\n", err.Error())
-	} else {
-		fmt.Printf("message sent: %s\n", message)
-	}
+	c.HandleUserInput()
 }

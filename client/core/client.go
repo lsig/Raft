@@ -1,9 +1,12 @@
 package client
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strings"
 
 	miniraft "github.com/lsig/Raft/client/pb"
 	"google.golang.org/protobuf/proto"
@@ -17,7 +20,7 @@ func NewClient(serverAddress string) *Client {
 	return &Client{ServerAddress: serverAddress}
 }
 
-func (s *Client) SendMessage(msg string) error {
+func (c *Client) SendMessage(msg string) error {
 	message := &miniraft.Raft{Message: &miniraft.Raft_CommandName{CommandName: msg}}
 
 	data, err := proto.Marshal(message)
@@ -27,7 +30,7 @@ func (s *Client) SendMessage(msg string) error {
 		return fmt.Errorf("failed to marshal message: %w", err)
 	}
 
-	udpAddr, err := net.ResolveUDPAddr("udp", s.ServerAddress)
+	udpAddr, err := net.ResolveUDPAddr("udp", c.ServerAddress)
 
 	if err != nil {
 		log.Println("Failed to resolve UDP address")
@@ -47,4 +50,28 @@ func (s *Client) SendMessage(msg string) error {
 	}
 
 	return nil
+}
+
+func (c *Client) HandleUserInput() {
+	// use bufio instead of fmt.Scanln, as Scanln doesn't handle whitespace
+	// ... Even though the client doesn't have to support whitespace in input
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		input, err := reader.ReadString('\n')
+		if err != nil {
+			fmt.Printf("error reading stdin: %s\n", err.Error())
+			continue
+		}
+		message := strings.Trim(input, "\n")
+
+		if message == "exit" {
+			break
+		}
+
+		err = c.SendMessage(message)
+		if err != nil {
+			fmt.Printf("error sending msg: %s\n", err.Error())
+		}
+	}
 }
