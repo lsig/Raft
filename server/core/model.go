@@ -28,12 +28,18 @@ type Info struct {
 	Id      int
 }
 
+type Log struct {
+	Term    uint64
+	Index   int
+	Command string
+}
+
 type Raft struct {
 	LeaderId    int
 	CurrentTerm uint64
 	VotedFor    int
 	Votes       map[uint64][]int
-	Log         []miniraft.LogEntry
+	Logs        []Log
 	CommitIndex int
 	LastApplied int
 	NextIndex   []int
@@ -82,11 +88,11 @@ func NewServer(address string, nodes []string) *Server {
 		CurrentTerm: 0,
 		VotedFor:    -1,
 		Votes:       map[uint64][]int{},
-		Log:         []miniraft.LogEntry{},
+		Logs:        []Log{},
 		CommitIndex: 0,
 		LastApplied: 0,
-		NextIndex:   nil,
-		MatchIndex:  nil,
+		NextIndex:   make([]int, nodeInfo.Len),
+		MatchIndex:  make([]int, nodeInfo.Len),
 	}
 
 	return &Server{
@@ -99,4 +105,8 @@ func NewServer(address string, nodes []string) *Server {
 		State:        Follower,
 		Raft:         raft,
 	}
+}
+
+func (l *Log) String() string {
+	return fmt.Sprintf("%d,%d,%s", l.Term, l.Index, l.Command)
 }

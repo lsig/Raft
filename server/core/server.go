@@ -130,7 +130,7 @@ func (s *Server) CommandLineInterface() {
 		command := strings.TrimSpace(scanner.Text())
 		switch {
 		case command == "log":
-			continue
+		s.HandleLogCommand()
 		case command == "print":
 			continue
 		case command == "resume":

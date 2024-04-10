@@ -94,3 +94,9 @@ func (s *Server) sendVoteResponse(address string, granted bool) {
 	fmt.Printf("sending VoteResponse to %s\n", address)
 	s.SendMessage(address, message)
 }
+
+func (s *Server) HandleLogCommand() {
+	for _, log := range s.Raft.Logs {
+		fmt.Println(log.String())
+	}
+}
