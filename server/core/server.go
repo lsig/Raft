@@ -141,7 +141,7 @@ func (s *Server) CommandLineInterface() {
 		case command == "print":
 			s.HandlePrintCommand()
 		case command == "resume":
-			continue
+			s.HandleResumeCommand()
 		case command == "suspend":
 			s.HandleSuspendCommand()
 		}

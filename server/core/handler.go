@@ -112,6 +112,10 @@ func (s *Server) HandlePrintCommand() {
 	fmt.Printf("MatchIndex: %v\n", s.Raft.NextIndex)
 }
 
+func (s *Server) HandleResumeCommand() {
+	s.ChangeState(Follower)
+}
+
 func (s *Server) HandleSuspendCommand() {
 	s.ChangeState(Failed)
 }
