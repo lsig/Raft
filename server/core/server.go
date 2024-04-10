@@ -158,8 +158,10 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_CommandName:
 			s.HandleClientCommand(packet.Address, msg.CommandName)
 		case *miniraft.Raft_RequestVoteRequest:
-			s.HandleVoteRequest(msg)
+			s.HandleVoteRequest(packet.Address, msg)
 		case *miniraft.Raft_RequestVoteResponse:
+			// If I receive a positive vote, check how many votes I now have
+			// If I have the majority of votes, become the leader
 			continue
 		case *miniraft.Raft_AppendEntriesRequest:
 			s.TimeoutReset <- struct{}{}
@@ -206,7 +208,12 @@ func (s *Server) CommandProcessing() {
 
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
+		fmt.Println("Timeout expired")
+		s.CurrentTerm += 1 // Timed out, increment term
 		s.ChangeState(Candidate)
+
+		vote, _ := strconv.Atoi(s.Nodes[s.Address])
+		s.VotedFor = vote
 
 		lastIndex := len(s.Log) - 1
 
@@ -220,10 +227,11 @@ func (s *Server) WaitForTimeout() {
 				RequestVoteRequest: details,
 			},
 		}
-		fmt.Println("Timeout expired")
 
 		for addr := range s.Nodes {
-			s.SendMessage(addr, message)
+			if addr != s.Address {
+				s.SendMessage(addr, message)
+			}
 		}
 	}
 }

@@ -11,7 +11,7 @@ func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
 
 	if lastIndex == -1 {
 		details := &miniraft.RequestVoteRequest{
-			Term:          s.CurrentTerm + 1,
+			Term:          s.CurrentTerm,
 			CandidateName: s.Nodes[s.Address],
 			LastLogIndex:  uint64(0),
 			LastLogTerm:   0,
@@ -19,7 +19,7 @@ func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
 		return details
 	} else {
 		details := &miniraft.RequestVoteRequest{
-			Term:          s.CurrentTerm + 1,
+			Term:          s.CurrentTerm,
 			CandidateName: s.Nodes[s.Address],
 			LastLogIndex:  uint64(lastIndex),
 			LastLogTerm:   s.Log[lastIndex].Term,
@@ -40,7 +40,11 @@ func (s *Server) ChangeState(newState State) {
 	case Leader:
 		newStateName = "leader"
 	}
-	fmt.Printf("New state: %v\n", newStateName)
+
+	// only announce the new state if its different than the old
+	if newState != s.State {
+		fmt.Printf("New state: %v\n", newStateName)
+	}
 
 	s.State = newState
 }
