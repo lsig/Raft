@@ -17,7 +17,6 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 		s.Raft.Logs = append(s.Raft.Logs, newLog)
 
 	} else {
-
 		if s.Raft.LeaderId == -1 {
 			fmt.Printf("No leader to send command to, aborting...")
 			return
@@ -86,7 +85,10 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 	s.TimeoutReset <- struct{}{}
 	lId, _ := strconv.Atoi(message.LeaderId)
 	s.Raft.LeaderId = lId
-	// fmt.Printf("Received AER from: %s\n", address)
+
+	if len(message.Entries) > 0 {
+		fmt.Printf("Received leader Log: %v\n", message.Entries)
+	}
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
@@ -116,7 +118,7 @@ func (s *Server) HandlePrintCommand() {
 	fmt.Printf("LastAppliedIndex: %d\n", s.Raft.LastApplied)
 	fmt.Printf("CurrentTerm: %d\n", s.Raft.CurrentTerm)
 	fmt.Printf("NextIndex: %v\n", s.Raft.NextIndex)
-	fmt.Printf("MatchIndex: %v\n", s.Raft.NextIndex)
+	fmt.Printf("MatchIndex: %v\n", s.Raft.MatchIndex)
 }
 
 func (s *Server) HandleResumeCommand() {

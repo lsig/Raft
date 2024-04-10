@@ -196,17 +196,50 @@ func (s *Server) SendHeartbeats() {
 			if address == s.Info.Address {
 				continue
 			}
-			message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: &miniraft.AppendEntriesRequest{
-				Term:         s.Raft.CurrentTerm,
-				PrevLogIndex: 0,
-				PrevLogTerm:  0,
-				LeaderCommit: 0,
-				LeaderId:     fmt.Sprint(s.Info.Id),
-			}}}
+
+			// if s.Raft.NextIndex[idx] < len(s.Raft.Logs) {
+			// }
+
+			// lastLogIndex := len(s.Raft.Logs) - 1
+			message := s.createAppendEntriesRequest(address)
+
 			s.SendMessage(address, message)
 		}
 
 		// send heartbeats at an order of magnitude faster than timeouts
 		time.Sleep(util.GetRandomTimeout() / 10)
 	}
+}
+
+func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
+	sId := util.FindServerId(s.Nodes.Addresses, address)
+
+	prevLogIndex := s.Raft.NextIndex[sId] - 1
+	if prevLogIndex < 0 {
+		prevLogIndex = 0
+	}
+
+	logEntries := []*miniraft.LogEntry{}
+
+	if s.Raft.MatchIndex[sId] == len(s.Raft.Logs)-1 {
+		logEntries = append(logEntries, s.Raft.Logs[len(s.Raft.Logs)-1].ToLogEntry())
+	}
+
+	var prevLogTerm uint64 = 0
+
+	// only fetch last log's term if a last log exists
+	if len(s.Raft.Logs)-1 >= prevLogIndex {
+		prevLogTerm = s.Raft.Logs[prevLogIndex].Term
+	}
+
+	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: &miniraft.AppendEntriesRequest{
+		Term:         s.Raft.CurrentTerm,
+		PrevLogIndex: uint64(prevLogIndex),
+		PrevLogTerm:  prevLogTerm,
+		LeaderCommit: uint64(s.Raft.CommitIndex),
+		LeaderId:     fmt.Sprint(s.Info.Id),
+		Entries:      logEntries,
+	}}}
+
+	return message
 }

@@ -44,6 +44,7 @@ type Raft struct {
 	LastApplied int
 	NextIndex   []int
 	MatchIndex  []int
+	// Updating    []bool
 }
 
 type Server struct {
@@ -109,4 +110,9 @@ func NewServer(address string, nodes []string) *Server {
 
 func (l *Log) String() string {
 	return fmt.Sprintf("%d,%d,%s", l.Term, l.Index, l.Command)
+}
+
+func (l *Log) ToLogEntry() *miniraft.LogEntry {
+	logEntry := &miniraft.LogEntry{Index: uint64(l.Index), Term: l.Term, CommandName: l.Command}
+	return logEntry
 }
