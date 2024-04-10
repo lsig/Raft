@@ -1,9 +1,12 @@
 package core
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"time"
 
 	miniraft "github.com/lsig/Raft/server/pb"
@@ -62,7 +65,7 @@ func (s *Server) ReceiveMessage() error {
 
 func (s *Server) Start() {
 	go s.MessageProcessing()
-	go s.CommandProcessing()
+	go s.CommandLineInterface()
 	go s.StartTimeout()
 	go s.WaitForTimeout()
 
@@ -121,8 +124,10 @@ func (s *Server) StartTimeout() {
 	}
 }
 
-func (s *Server) CommandProcessing() {
-	for command := range s.Commands {
+func (s *Server) CommandLineInterface() {
+	scanner := bufio.NewScanner(os.Stdin)
+	for scanner.Scan() {
+		command := strings.TrimSpace(scanner.Text())
 		switch {
 		case command == "log":
 			continue

@@ -43,7 +43,6 @@ type Raft struct {
 type Server struct {
 	Info         Info
 	Messages     chan *Packet
-	Commands     chan string
 	TimeoutReset chan struct{}
 	TimeoutDone  chan struct{}
 	Nodes        Nodes
@@ -93,7 +92,6 @@ func NewServer(address string, nodes []string) *Server {
 	return &Server{
 		Info:         info,
 		Messages:     make(chan *Packet, 128),
-		Commands:     make(chan string, 128),
 		TimeoutDone:  make(chan struct{}),
 		TimeoutReset: make(chan struct{}),
 		Nodes:        nodeInfo,
