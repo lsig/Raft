@@ -42,7 +42,6 @@ func (s *Server) ReceiveMessage() error {
 		log.Println("Failed to read from udp buffer")
 		return fmt.Errorf("failed to read from udp buffer: %w", err)
 	}
-	fmt.Printf("received msg from: %v\n", addr)
 	packet := &Packet{
 		Address: addr.String(),
 		Content: &miniraft.Raft{},
@@ -103,7 +102,6 @@ func (s *Server) MessageProcessing() {
 			fmt.Println(msg)
 		}
 	}
-
 }
 
 func (s *Server) StartTimeout() {
@@ -145,7 +143,9 @@ func (s *Server) WaitForTimeout() {
 
 		vote := s.Info.Id
 		s.Raft.VotedFor = vote
-		// s.Raft.Votes[s.Raft.CurrentTerm] = []int{vote}
+
+		s.Raft.Votes[s.Raft.CurrentTerm] = make([]int, s.Nodes.Len)
+		s.Raft.Votes[s.Raft.CurrentTerm][uint64(s.Info.Id)] = 1
 
 		details := s.CreateVoteRequest()
 		message := &miniraft.Raft{

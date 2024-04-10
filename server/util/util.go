@@ -49,3 +49,15 @@ func GetRandomTimeout() time.Duration {
 	debugScale := 20
 	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
 }
+
+func FindServerId(addresses []string, address string) uint64 {
+	var serverIndex uint64
+	for idx, nodeAddr := range addresses {
+		if address == nodeAddr {
+			serverIndex = uint64(idx)
+			break
+		}
+	}
+
+	return serverIndex
+}

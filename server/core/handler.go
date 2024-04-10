@@ -47,12 +47,20 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 }
 
 func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVoteResponse) {
+	serverIndex := util.FindServerId(s.Nodes.Addresses, address)
 
 	if message.VoteGranted {
 		fmt.Printf("Vote granted by %s\n", address)
+
+		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = 1
 	} else {
+		// TODO check whether the responding server's Term is higher...
+		// if so, we must update the term and restart the timeout
 		fmt.Printf("Vote NOT granted by %s\n", address)
+		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = -1
 	}
+
+	fmt.Printf("my votes: %v\n", s.Raft.Votes[s.Raft.CurrentTerm])
 
 }
 
