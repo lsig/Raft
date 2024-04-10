@@ -93,17 +93,24 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_CommandName:
 			s.HandleClientCommand(packet.Address, msg.CommandName)
 		case *miniraft.Raft_RequestVoteRequest:
+			if s.State == Failed {
+				continue
+			}
 			s.HandleVoteRequest(packet.Address, msg.RequestVoteRequest)
 		case *miniraft.Raft_RequestVoteResponse:
 			// If I receive a positive vote, check how many votes I now have
 			// If I have the majority of votes, become the leader
+			if s.State == Failed {
+				continue
+			}
 			s.HandleVoteResponse(packet.Address, msg.RequestVoteResponse)
 		case *miniraft.Raft_AppendEntriesRequest:
+			if s.State == Failed {
+				continue
+			}
 			s.HandleAppendEntriesRequest(packet.Address, msg.AppendEntriesRequest)
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
-		default:
-			fmt.Println(msg)
 		}
 	}
 }
@@ -136,7 +143,7 @@ func (s *Server) CommandLineInterface() {
 		case command == "resume":
 			continue
 		case command == "suspend":
-			continue
+			s.HandleSuspendCommand()
 		}
 	}
 }
@@ -144,7 +151,7 @@ func (s *Server) CommandLineInterface() {
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
 		// I'm the leader, timeouts don't affect me
-		if s.State == Leader {
+		if s.State == Leader || s.State == Failed {
 			continue
 		}
 
@@ -175,11 +182,7 @@ func (s *Server) WaitForTimeout() {
 func (s *Server) AnnounceLeadership() {
 	s.ChangeState(Leader)
 
-	for {
-		if s.State != Leader {
-			break
-		}
-
+	for s.State == Leader {
 		for _, address := range s.Nodes.Addresses {
 			// don't send to myself
 			if address == s.Info.Address {

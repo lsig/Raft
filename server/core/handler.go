@@ -102,6 +102,7 @@ func (s *Server) HandleLogCommand() {
 }
 
 func (s *Server) HandlePrintCommand() {
+	fmt.Printf("State: %d\n", s.State)
 	fmt.Printf("CurrentTerm: %d\n", s.Raft.CurrentTerm)
 	fmt.Printf("VotedFor: %d\n", s.Raft.VotedFor)
 	fmt.Printf("CommitIndex: %d\n", s.Raft.CommitIndex)
@@ -109,4 +110,8 @@ func (s *Server) HandlePrintCommand() {
 	fmt.Printf("CurrentTerm: %d\n", s.Raft.CurrentTerm)
 	fmt.Printf("NextIndex: %v\n", s.Raft.NextIndex)
 	fmt.Printf("MatchIndex: %v\n", s.Raft.NextIndex)
+}
+
+func (s *Server) HandleSuspendCommand() {
+	s.ChangeState(Failed)
 }
