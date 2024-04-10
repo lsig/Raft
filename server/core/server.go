@@ -108,6 +108,7 @@ func (s *Server) MessageProcessing() {
 			if s.State == Failed {
 				continue
 			}
+			s.HandleAppendEntriesRequest(msg.AppendEntriesRequest)
 			s.HandleAppendEntriesRequest(packet.Address, msg.AppendEntriesRequest)
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue

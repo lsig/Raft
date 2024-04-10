@@ -89,6 +89,27 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 	if len(message.Entries) > 0 {
 		fmt.Printf("Received leader Log: %v\n", message.Entries)
 	}
+
+	if message.Term < s.Raft.CurrentTerm {
+		s.sendAppendEntriesRes(address, false)
+		return
+	}
+
+	if len(s.Raft.Logs)-1 < int(message.PrevLogIndex) {
+		s.sendAppendEntriesRes(address, false)
+		return
+	}
+
+	if s.Raft.Logs[message.PrevLogIndex].Term != message.PrevLogTerm {
+		s.sendAppendEntriesRes(address, false)
+		return
+	}
+
+	for _, entry := range message.Entries {
+		log := Log{}
+		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
+	}
+	s.sendAppendEntriesRes(address, true)
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
@@ -101,6 +122,17 @@ func (s *Server) sendVoteResponse(address string, granted bool) {
 	}}
 
 	fmt.Printf("sending VoteResponse to %s\n", address)
+	s.SendMessage(address, message)
+}
+
+func (s *Server) sendAppendEntriesRes(address string, success bool) {
+	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesResponse{
+		AppendEntriesResponse: &miniraft.AppendEntriesResponse{
+			Term:    s.Raft.CurrentTerm,
+			Success: success,
+		},
+	}}
+	fmt.Printf("Sending AppendEntriesResponse to %s\n", address)
 	s.SendMessage(address, message)
 }
 

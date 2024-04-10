@@ -116,3 +116,10 @@ func (l *Log) ToLogEntry() *miniraft.LogEntry {
 	logEntry := &miniraft.LogEntry{Index: uint64(l.Index), Term: l.Term, CommandName: l.Command}
 	return logEntry
 }
+
+func (l Log) FromLogEntry(entry *miniraft.LogEntry) Log {
+	l.Index = int(entry.Index)
+	l.Term = entry.Term
+	l.Command = entry.CommandName
+	return l
+}
