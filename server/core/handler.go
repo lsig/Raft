@@ -9,17 +9,23 @@ import (
 )
 
 func (s *Server) HandleClientCommand(address string, cmd string) {
-	fmt.Printf("Received command: %s", cmd)
+	fmt.Printf("Received command: %s\n", cmd)
 
-	msg := &miniraft.Raft_CommandName{
-		CommandName: fmt.Sprintf("Thank you for the command: %s", cmd),
+	if s.State == Leader {
+		// Command is either from server or client
+	} else {
+
+		if s.Raft.LeaderId == -1 {
+			fmt.Printf("No leader to send command to, aborting...")
+			return
+		}
+
+		// Command must be from client, forward to leader
+		leaderAddress := util.FindLeaderAddress(s.Nodes.Addresses, s.Raft.LeaderId)
+		packet := &miniraft.Raft{Message: &miniraft.Raft_CommandName{CommandName: cmd}}
+
+		s.SendMessage(leaderAddress, packet)
 	}
-
-	packet := &miniraft.Raft{
-		Message: msg,
-	}
-
-	s.SendMessage(address, packet)
 }
 
 func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVoteRequest) {
@@ -64,22 +70,20 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 		if util.ReceivedMajorityVotes(s.Raft.Votes[s.Raft.CurrentTerm]) {
 			s.AnnounceLeadership()
 		}
-
 	} else {
 		// TODO check whether the responding server's Term is higher...
 		// if so, we must update the term and restart the timeout
 		fmt.Printf("Vote NOT granted by %s\n", address)
 		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = -1
 	}
-
-	fmt.Printf("my votes: %v\n", s.Raft.Votes[s.Raft.CurrentTerm])
-
+	// fmt.Printf("my votes: %v\n", s.Raft.Votes[s.Raft.CurrentTerm])
 }
 
 func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.AppendEntriesRequest) {
 	s.TimeoutReset <- struct{}{}
-	fmt.Printf("Received AER from: %s\n", address)
-
+	lId, _ := strconv.Atoi(message.LeaderId)
+	s.Raft.LeaderId = lId
+	// fmt.Printf("Received AER from: %s\n", address)
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
@@ -113,7 +117,9 @@ func (s *Server) HandlePrintCommand() {
 }
 
 func (s *Server) HandleResumeCommand() {
-	s.ChangeState(Follower)
+	if s.State == Failed {
+		s.ChangeState(Follower)
+	}
 }
 
 func (s *Server) HandleSuspendCommand() {

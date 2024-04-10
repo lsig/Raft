@@ -56,9 +56,10 @@ func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
 	s.Raft.CurrentTerm = newTerm
 
 	s.Raft.VotedFor = newVote
+	s.Raft.LeaderId = -1 // we don't have a leader at this point
 
 	// This might only be useful if the server is the leader
-	for idx := range s.Nodes.Addresses{
+	for idx := range s.Nodes.Addresses {
 		s.Raft.NextIndex[idx] = len(s.Raft.Logs) + 1
 	}
 }

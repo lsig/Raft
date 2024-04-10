@@ -62,6 +62,10 @@ func FindServerId(addresses []string, address string) uint64 {
 	return serverIndex
 }
 
+func FindLeaderAddress(addresses []string, leaderId int) string {
+	return addresses[leaderId]
+}
+
 func ReceivedMajorityVotes(votes []int) bool {
 	total := len(votes)
 	received := 0

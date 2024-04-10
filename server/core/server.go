@@ -182,6 +182,14 @@ func (s *Server) WaitForTimeout() {
 func (s *Server) AnnounceLeadership() {
 	s.ChangeState(Leader)
 
+	// Guess what... I'm the leader now 😎
+	s.Raft.LeaderId = s.Info.Id
+
+	// create a goroutine which sends periodic heartbeats
+	go s.SendHeartbeats()
+}
+
+func (s *Server) SendHeartbeats() {
 	for s.State == Leader {
 		for _, address := range s.Nodes.Addresses {
 			// don't send to myself
