@@ -13,6 +13,9 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 
 	if s.State == Leader {
 		// Command is either from server or client
+		newLog := Log{Term: s.Raft.CurrentTerm, Index: len(s.Raft.Logs), Command: cmd}
+		s.Raft.Logs = append(s.Raft.Logs, newLog)
+
 	} else {
 
 		if s.Raft.LeaderId == -1 {
