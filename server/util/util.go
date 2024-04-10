@@ -17,8 +17,6 @@ func FindNodesAndAddressFromArgs() (nodes []string, address string) {
 	address = os.Args[1]
 	file := os.Args[2]
 
-	nodes = []string{}
-
 	fileBytes, err := os.ReadFile(file)
 	if err != nil {
 		fmt.Printf("error: %s\n", err.Error())
@@ -27,13 +25,7 @@ func FindNodesAndAddressFromArgs() (nodes []string, address string) {
 
 	// src: https://golangdocs.com/golang-byte-array-to-string
 	contents := string(fileBytes[:])
-
-	servers := strings.Split(contents, "\n")
-	for _, s := range servers {
-		if s != address {
-			nodes = append(nodes, s)
-		}
-	}
+	nodes = strings.Split(contents, "\n")
 
 	return
 }
@@ -53,6 +45,6 @@ func AppendToFile(filename, text string) error {
 }
 
 func GetRandomTimeout() time.Duration {
-	debugScale := 10
+	debugScale := 20
 	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
 }
