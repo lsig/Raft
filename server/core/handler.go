@@ -48,6 +48,12 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 
 func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVoteResponse) {
 
+	if message.VoteGranted {
+		fmt.Printf("Vote granted by %s\n", address)
+	} else {
+		fmt.Printf("Vote NOT granted by %s\n", address)
+	}
+
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
@@ -59,5 +65,6 @@ func (s *Server) sendVoteResponse(address string, granted bool) {
 		},
 	}}
 
+	fmt.Printf("sending VoteResponse to %s\n", address)
 	s.SendMessage(address, message)
 }

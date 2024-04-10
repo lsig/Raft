@@ -28,6 +28,7 @@ type Server struct {
 	TimeoutReset chan struct{}
 	TimeoutDone  chan struct{}
 	Nodes        map[string]string
+	Gateway      *net.UDPConn
 	LeaderId     int
 	Timer        *time.Timer
 	State        State
@@ -81,20 +82,12 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 	}
 
 	udpAddr, err := net.ResolveUDPAddr("udp", addr)
-
 	if err != nil {
 		log.Println("Failed to resolve UDP address")
 		return fmt.Errorf("failed to resolve UDP address: %w", err)
 	}
 
-	conn, err := net.DialUDP("udp", nil, udpAddr)
-	if err != nil {
-		log.Println("Failed to dial UDP")
-		return fmt.Errorf("failed to dial UDP: %w", err)
-	}
-	defer conn.Close()
-
-	if _, err := conn.Write(data); err != nil {
+	if _, err := s.Gateway.WriteTo(data, udpAddr); err != nil {
 		log.Println("Error sending UDP packet")
 		return fmt.Errorf("error sending UDP packet: %w", err)
 	}
@@ -102,14 +95,15 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 	return nil
 }
 
-func (s *Server) ReceiveMessage(conn *net.UDPConn) error {
+func (s *Server) ReceiveMessage() error {
 	bs := make([]byte, 65536)
-	n, addr, err := conn.ReadFromUDP(bs)
+
+	n, addr, err := s.Gateway.ReadFromUDP(bs)
 	if err != nil {
 		log.Println("Failed to read from udp buffer")
 		return fmt.Errorf("failed to read from udp buffer: %w", err)
 	}
-
+	fmt.Printf("received msg from: %v\n", addr)
 	packet := &Packet{
 		Address: addr.String(),
 		Content: &miniraft.Raft{},
@@ -134,22 +128,20 @@ func (s *Server) Start() {
 	go s.WaitForTimeout()
 
 	serverAddr, err := net.ResolveUDPAddr("udp", s.Address)
-
 	if err != nil {
 		log.Fatal("Failed to resolve server address", err)
 	}
 
 	conn, err := net.ListenUDP("udp", serverAddr)
-
 	if err != nil {
 		log.Fatal("Failed to listen to udp", err)
 	}
-
+	s.Gateway = conn
 	defer conn.Close()
 
 	log.Printf("Server listening on %s\n", s.Address)
 	for {
-		s.ReceiveMessage(conn)
+		s.ReceiveMessage()
 	}
 }
 
@@ -164,7 +156,6 @@ func (s *Server) MessageProcessing() {
 			// If I receive a positive vote, check how many votes I now have
 			// If I have the majority of votes, become the leader
 			s.HandleVoteResponse(packet.Address, msg.RequestVoteResponse)
-			continue
 		case *miniraft.Raft_AppendEntriesRequest:
 			s.TimeoutReset <- struct{}{}
 		case *miniraft.Raft_AppendEntriesResponse:
