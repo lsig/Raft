@@ -55,10 +55,7 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = 1
 
 		if util.ReceivedMajorityVotes(s.Raft.Votes[s.Raft.CurrentTerm]) {
-			fmt.Println("I have reached majority and am the LEADER")
 			s.AnnounceLeadership()
-		} else {
-			fmt.Println("I have still not yet reached majority...")
 		}
 
 	} else {
@@ -69,6 +66,12 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 	}
 
 	fmt.Printf("my votes: %v\n", s.Raft.Votes[s.Raft.CurrentTerm])
+
+}
+
+func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.AppendEntriesRequest) {
+	s.TimeoutReset <- struct{}{}
+	fmt.Printf("Received AER from: %s\n", address)
 
 }
 

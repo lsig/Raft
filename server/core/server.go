@@ -96,7 +96,7 @@ func (s *Server) MessageProcessing() {
 			// If I have the majority of votes, become the leader
 			s.HandleVoteResponse(packet.Address, msg.RequestVoteResponse)
 		case *miniraft.Raft_AppendEntriesRequest:
-			s.TimeoutReset <- struct{}{}
+			s.HandleAppendEntriesRequest(packet.Address, msg.AppendEntriesRequest)
 		case *miniraft.Raft_AppendEntriesResponse:
 			continue
 		default:
@@ -190,6 +190,8 @@ func (s *Server) AnnounceLeadership() {
 			}}}
 			s.SendMessage(address, message)
 		}
-		time.Sleep(10 * time.Millisecond)
+
+		// send heartbeats at an order of magnitude faster than timeouts
+		time.Sleep(util.GetRandomTimeout() / 10)
 	}
 }
