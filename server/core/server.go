@@ -208,8 +208,8 @@ func (s *Server) CommandProcessing() {
 
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
-		fmt.Println("Timeout expired")
 		s.CurrentTerm += 1 // Timed out, increment term
+		fmt.Printf("Timed out - entering term %d\n", s.CurrentTerm)
 		s.ChangeState(Candidate)
 
 		vote, _ := strconv.Atoi(s.Nodes[s.Address])
