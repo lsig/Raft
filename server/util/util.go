@@ -61,3 +61,17 @@ func FindServerId(addresses []string, address string) uint64 {
 
 	return serverIndex
 }
+
+func ReceivedMajorityVotes(votes []int) bool {
+	total := len(votes)
+	received := 0
+
+	for _, v := range votes {
+		if v == 1 {
+			received++
+		}
+	}
+
+	// a majority is reached when the number of received votes is strictly more than half of all nodes
+	return received > total/2
+}

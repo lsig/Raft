@@ -53,6 +53,14 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 		fmt.Printf("Vote granted by %s\n", address)
 
 		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = 1
+
+		if util.ReceivedMajorityVotes(s.Raft.Votes[s.Raft.CurrentTerm]) {
+			fmt.Println("I have reached majority and am the LEADER")
+			s.AnnounceLeadership()
+		} else {
+			fmt.Println("I have still not yet reached majority...")
+		}
+
 	} else {
 		// TODO check whether the responding server's Term is higher...
 		// if so, we must update the term and restart the timeout

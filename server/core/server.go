@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"time"
 
 	miniraft "github.com/lsig/Raft/server/pb"
 	"github.com/lsig/Raft/server/util"
@@ -137,6 +138,11 @@ func (s *Server) CommandProcessing() {
 
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
+		// I'm the leader, timeouts don't affect me
+		if s.State == Leader {
+			continue
+		}
+
 		s.Raft.CurrentTerm += 1 // Timed out, increment term
 		fmt.Printf("Timed out - entering term %d\n", s.Raft.CurrentTerm)
 		s.ChangeState(Candidate)
@@ -159,5 +165,31 @@ func (s *Server) WaitForTimeout() {
 				s.SendMessage(addr, message)
 			}
 		}
+	}
+}
+
+func (s *Server) AnnounceLeadership() {
+	s.ChangeState(Leader)
+
+	for {
+		if s.State != Leader {
+			break
+		}
+
+		for _, address := range s.Nodes.Addresses {
+			// don't send to myself
+			if address == s.Info.Address {
+				continue
+			}
+			message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: &miniraft.AppendEntriesRequest{
+				Term:         s.Raft.CurrentTerm,
+				PrevLogIndex: 0,
+				PrevLogTerm:  0,
+				LeaderCommit: 0,
+				LeaderId:     fmt.Sprintf("%d", s.Info.Id),
+			}}}
+			s.SendMessage(address, message)
+		}
+		time.Sleep(10 * time.Millisecond)
 	}
 }
