@@ -25,6 +25,7 @@ func FindNodesAndAddressFromArgs() (nodes []string, address string) {
 
 	// src: https://golangdocs.com/golang-byte-array-to-string
 	contents := string(fileBytes[:])
+	contents = strings.Trim(contents, "\n")
 	nodes = strings.Split(contents, "\n")
 
 	return

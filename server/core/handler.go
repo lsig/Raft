@@ -26,8 +26,8 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 	fmt.Printf("received RVR - ")
 
 	var granted bool
-	if s.VotedFor != -1 && s.CurrentTerm >= message.Term {
-		fmt.Printf("Already voted to %v...\n", s.VotedFor)
+	if s.Raft.VotedFor != -1 && s.Raft.CurrentTerm >= message.Term {
+		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
 		granted = false
 	} else {
 		// TODO check whether requesting candiate is up-to-date
@@ -37,8 +37,8 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 		newTerm := message.Term
 		newVote, _ := strconv.Atoi(message.CandidateName)
 		s.Timer.Reset(util.GetRandomTimeout())
-		s.CurrentTerm = newTerm
-		s.VotedFor = newVote
+		s.Raft.CurrentTerm = newTerm
+		s.Raft.VotedFor = newVote
 		fmt.Printf("Entered term %d! Voted casted to %v!\n", newTerm, newVote)
 		granted = true
 	}
@@ -60,7 +60,7 @@ func (s *Server) sendVoteResponse(address string, granted bool) {
 
 	message := &miniraft.Raft{Message: &miniraft.Raft_RequestVoteResponse{
 		RequestVoteResponse: &miniraft.RequestVoteResponse{
-			Term:        s.CurrentTerm,
+			Term:        s.Raft.CurrentTerm,
 			VoteGranted: granted,
 		},
 	}}

@@ -4,74 +4,11 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strconv"
-	"time"
 
 	miniraft "github.com/lsig/Raft/server/pb"
 	"github.com/lsig/Raft/server/util"
 	"google.golang.org/protobuf/proto"
 )
-
-type State int
-
-const (
-	Leader State = iota
-	Candidate
-	Follower
-	Failed
-)
-
-type Server struct {
-	Address      string
-	Messages     chan *Packet
-	Commands     chan string
-	TimeoutReset chan struct{}
-	TimeoutDone  chan struct{}
-	Nodes        map[string]string
-	Gateway      *net.UDPConn
-	LeaderId     int
-	Timer        *time.Timer
-	State        State
-	CurrentTerm  uint64
-	VotedFor     int
-	Votes        map[int][]int
-	Log          []miniraft.LogEntry
-	CommitIndex  int
-	LastApplied  int
-	NextIndex    []int
-	MatchIndex   []int
-}
-
-type Packet struct {
-	Address string
-	Content *miniraft.Raft
-}
-
-func NewServer(address string, nodes []string) *Server {
-	dict := map[string]string{}
-	for idx, addr := range nodes {
-		dict[addr] = strconv.Itoa(idx)
-	}
-
-	return &Server{
-		Address:      address,
-		Messages:     make(chan *Packet, 128),
-		Commands:     make(chan string, 128),
-		TimeoutDone:  make(chan struct{}),
-		TimeoutReset: make(chan struct{}),
-		Nodes:        dict,
-		LeaderId:     -1,
-		Timer:        time.NewTimer(util.GetRandomTimeout()),
-		State:        Follower,
-		CurrentTerm:  0,
-		VotedFor:     -1,
-		Log:          []miniraft.LogEntry{},
-		CommitIndex:  0,
-		LastApplied:  0,
-		NextIndex:    nil,
-		MatchIndex:   nil,
-	}
-}
 
 func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 	data, err := proto.Marshal(message)
@@ -88,7 +25,9 @@ func (s *Server) SendMessage(addr string, message *miniraft.Raft) error {
 	}
 
 	if _, err := s.Gateway.WriteTo(data, udpAddr); err != nil {
-		log.Println("Error sending UDP packet")
+		log.Printf("Error sending UDP packet %s\n", err.Error())
+		log.Printf("Error sending to UDP Address: %s\n", udpAddr.String())
+		log.Printf("Error sending from UDP raw Address: %s\n", addr)
 		return fmt.Errorf("error sending UDP packet: %w", err)
 	}
 
@@ -127,7 +66,7 @@ func (s *Server) Start() {
 	go s.StartTimeout()
 	go s.WaitForTimeout()
 
-	serverAddr, err := net.ResolveUDPAddr("udp", s.Address)
+	serverAddr, err := net.ResolveUDPAddr("udp", s.Info.Address)
 	if err != nil {
 		log.Fatal("Failed to resolve server address", err)
 	}
@@ -139,7 +78,7 @@ func (s *Server) Start() {
 	s.Gateway = conn
 	defer conn.Close()
 
-	log.Printf("Server listening on %s\n", s.Address)
+	log.Printf("Server listening on %s\n", s.Info.Address)
 	for {
 		s.ReceiveMessage()
 	}
@@ -200,18 +139,13 @@ func (s *Server) CommandProcessing() {
 
 func (s *Server) WaitForTimeout() {
 	for range s.TimeoutDone {
-		s.CurrentTerm += 1 // Timed out, increment term
-		fmt.Printf("Timed out - entering term %d\n", s.CurrentTerm)
+		s.Raft.CurrentTerm += 1 // Timed out, increment term
+		fmt.Printf("Timed out - entering term %d\n", s.Raft.CurrentTerm)
 		s.ChangeState(Candidate)
 
-		vote, _ := strconv.Atoi(s.Nodes[s.Address])
-		s.VotedFor = vote
-
-		lastIndex := len(s.Log) - 1
-
-		if lastIndex == -1 {
-			lastIndex = 0
-		}
+		vote := s.Info.Id
+		s.Raft.VotedFor = vote
+		// s.Raft.Votes[s.Raft.CurrentTerm] = []int{vote}
 
 		details := s.CreateVoteRequest()
 		message := &miniraft.Raft{
@@ -220,8 +154,8 @@ func (s *Server) WaitForTimeout() {
 			},
 		}
 
-		for addr := range s.Nodes {
-			if addr != s.Address {
+		for _, addr := range s.Nodes.Addresses {
+			if addr != s.Info.Address {
 				s.SendMessage(addr, message)
 			}
 		}
