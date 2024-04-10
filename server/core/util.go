@@ -50,3 +50,15 @@ func (s *Server) ChangeState(newState State) {
 
 	s.State = newState
 }
+
+func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
+	// update current term
+	s.Raft.CurrentTerm = newTerm
+
+	s.Raft.VotedFor = newVote
+
+	// This might only be useful if the server is the leader
+	for idx := range s.Info.Address {
+		s.Raft.NextIndex[idx] = len(s.Raft.Log) + 1
+	}
+}

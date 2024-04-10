@@ -26,18 +26,25 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 	fmt.Printf("received RVR - ")
 
 	var granted bool
-	if s.Raft.VotedFor != -1 && s.Raft.CurrentTerm >= message.Term {
+	// Only grant votes if the received term is new
+	// or if the original term winner resends a request
+	if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && s.Raft.CurrentTerm >= message.Term {
 		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
 		granted = false
 	} else {
 		// TODO check whether requesting candiate is up-to-date
-		// TODO check whether requesting candiate's term is new?
+
+		// Become a follower
+		if s.State == Leader || s.State == Candidate {
+			s.State = Follower
+		}
 
 		// this term is strictly higher than the server's current term, due to the check above
 		newTerm := message.Term
 		newVote, _ := strconv.Atoi(message.CandidateName)
 		s.Timer.Reset(util.GetRandomTimeout())
-		s.Raft.CurrentTerm = newTerm
+
+		s.UpdateTerm(newTerm, newVote)
 		s.Raft.VotedFor = newVote
 		fmt.Printf("Entered term %d! Voted casted to %v!\n", newTerm, newVote)
 		granted = true

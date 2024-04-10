@@ -143,12 +143,11 @@ func (s *Server) WaitForTimeout() {
 			continue
 		}
 
-		s.Raft.CurrentTerm += 1 // Timed out, increment term
+		// Timed out, increment term
+		s.UpdateTerm(s.Raft.CurrentTerm+1, s.Info.Id)
+
 		fmt.Printf("Timed out - entering term %d\n", s.Raft.CurrentTerm)
 		s.ChangeState(Candidate)
-
-		vote := s.Info.Id
-		s.Raft.VotedFor = vote
 
 		s.Raft.Votes[s.Raft.CurrentTerm] = make([]int, s.Nodes.Len)
 		s.Raft.Votes[s.Raft.CurrentTerm][uint64(s.Info.Id)] = 1
@@ -186,7 +185,7 @@ func (s *Server) AnnounceLeadership() {
 				PrevLogIndex: 0,
 				PrevLogTerm:  0,
 				LeaderCommit: 0,
-				LeaderId:     fmt.Sprintf("%d", s.Info.Id),
+				LeaderId:     fmt.Sprint(s.Info.Id),
 			}}}
 			s.SendMessage(address, message)
 		}
