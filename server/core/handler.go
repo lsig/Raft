@@ -100,3 +100,13 @@ func (s *Server) HandleLogCommand() {
 		fmt.Println(log.String())
 	}
 }
+
+func (s *Server) HandlePrintCommand() {
+	fmt.Printf("CurrentTerm: %d\n", s.Raft.CurrentTerm)
+	fmt.Printf("VotedFor: %d\n", s.Raft.VotedFor)
+	fmt.Printf("CommitIndex: %d\n", s.Raft.CommitIndex)
+	fmt.Printf("LastAppliedIndex: %d\n", s.Raft.LastApplied)
+	fmt.Printf("CurrentTerm: %d\n", s.Raft.CurrentTerm)
+	fmt.Printf("NextIndex: %v\n", s.Raft.NextIndex)
+	fmt.Printf("MatchIndex: %v\n", s.Raft.NextIndex)
+}
