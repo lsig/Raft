@@ -49,7 +49,7 @@ func (s *Server) SendVoteResponse(address string, granted bool) {
 	message := &miniraft.Raft{Message: &miniraft.Raft_RequestVoteResponse{
 		RequestVoteResponse: &miniraft.RequestVoteResponse{
 			Term:        s.CurrentTerm,
-			VoteGranted: true,
+			VoteGranted: granted,
 		},
 	}}
 
