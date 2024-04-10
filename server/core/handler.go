@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	miniraft "github.com/lsig/Raft/server/pb"
+	"github.com/lsig/Raft/server/util"
 )
 
 func (s *Server) HandleClientCommand(address string, cmd string) {
@@ -21,11 +22,11 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 	s.SendMessage(address, packet)
 }
 
-func (s *Server) HandleVoteRequest(address string, message *miniraft.Raft_RequestVoteRequest) {
+func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVoteRequest) {
 	fmt.Printf("received RVR - ")
 
 	var granted bool
-	if s.VotedFor != -1 && s.CurrentTerm >= message.RequestVoteRequest.Term {
+	if s.VotedFor != -1 && s.CurrentTerm >= message.Term {
 		fmt.Printf("Already voted to %v...\n", s.VotedFor)
 		granted = false
 	} else {
@@ -33,18 +34,23 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.Raft_Reques
 		// TODO check whether requesting candiate's term is new?
 
 		// this term is strictly higher than the server's current term, due to the check above
-		newTerm := message.RequestVoteRequest.Term
-		newVote, _ := strconv.Atoi(message.RequestVoteRequest.CandidateName)
+		newTerm := message.Term
+		newVote, _ := strconv.Atoi(message.CandidateName)
+		s.Timer.Reset(util.GetRandomTimeout())
 		s.CurrentTerm = newTerm
 		s.VotedFor = newVote
 		fmt.Printf("Entered term %d! Voted casted to %v!\n", newTerm, newVote)
 		granted = true
 	}
 
-	s.SendVoteResponse(address, granted)
+	s.sendVoteResponse(address, granted)
 }
 
-func (s *Server) SendVoteResponse(address string, granted bool) {
+func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVoteResponse) {
+
+}
+
+func (s *Server) sendVoteResponse(address string, granted bool) {
 
 	message := &miniraft.Raft{Message: &miniraft.Raft_RequestVoteResponse{
 		RequestVoteResponse: &miniraft.RequestVoteResponse{

@@ -29,10 +29,11 @@ type Server struct {
 	TimeoutDone  chan struct{}
 	Nodes        map[string]string
 	LeaderId     int
-	Timeout      time.Duration
+	Timer        *time.Timer
 	State        State
 	CurrentTerm  uint64
 	VotedFor     int
+	Votes        map[int][]int
 	Log          []miniraft.LogEntry
 	CommitIndex  int
 	LastApplied  int
@@ -59,7 +60,7 @@ func NewServer(address string, nodes []string) *Server {
 		TimeoutReset: make(chan struct{}),
 		Nodes:        dict,
 		LeaderId:     -1,
-		Timeout:      util.GetRandomTimeout(),
+		Timer:        time.NewTimer(util.GetRandomTimeout()),
 		State:        Follower,
 		CurrentTerm:  0,
 		VotedFor:     -1,
@@ -158,10 +159,11 @@ func (s *Server) MessageProcessing() {
 		case *miniraft.Raft_CommandName:
 			s.HandleClientCommand(packet.Address, msg.CommandName)
 		case *miniraft.Raft_RequestVoteRequest:
-			s.HandleVoteRequest(packet.Address, msg)
+			s.HandleVoteRequest(packet.Address, msg.RequestVoteRequest)
 		case *miniraft.Raft_RequestVoteResponse:
 			// If I receive a positive vote, check how many votes I now have
 			// If I have the majority of votes, become the leader
+			s.HandleVoteResponse(packet.Address, msg.RequestVoteResponse)
 			continue
 		case *miniraft.Raft_AppendEntriesRequest:
 			s.TimeoutReset <- struct{}{}
@@ -176,17 +178,16 @@ func (s *Server) MessageProcessing() {
 
 func (s *Server) StartTimeout() {
 	// need to check if server is leader
-	timer := time.NewTimer(s.Timeout)
 	for {
 		select {
-		case <-timer.C:
+		case <-s.Timer.C:
 			s.TimeoutDone <- struct{}{}
-			timer.Reset(util.GetRandomTimeout())
+			s.Timer.Reset(util.GetRandomTimeout())
 		case <-s.TimeoutReset:
-			if !timer.Stop() {
-				<-timer.C
+			if !s.Timer.Stop() {
+				<-s.Timer.C
 			}
-			timer.Reset(util.GetRandomTimeout())
+			s.Timer.Reset(util.GetRandomTimeout())
 		}
 	}
 }
