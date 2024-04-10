@@ -8,7 +8,7 @@ import (
 )
 
 func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
-	lastIndex := len(s.Raft.Log) - 1
+	lastIndex := len(s.Raft.Logs) - 1
 	cn := strconv.Itoa(s.Info.Id)
 
 	if lastIndex == -1 {
@@ -24,7 +24,7 @@ func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
 			Term:          s.Raft.CurrentTerm,
 			CandidateName: cn,
 			LastLogIndex:  uint64(lastIndex),
-			LastLogTerm:   s.Raft.Log[lastIndex].Term,
+			LastLogTerm:   s.Raft.Logs[lastIndex].Term,
 		}
 		return details
 	}
@@ -58,7 +58,7 @@ func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
 	s.Raft.VotedFor = newVote
 
 	// This might only be useful if the server is the leader
-	for idx := range s.Info.Address {
-		s.Raft.NextIndex[idx] = len(s.Raft.Log) + 1
+	for idx := range s.Nodes.Addresses{
+		s.Raft.NextIndex[idx] = len(s.Raft.Logs) + 1
 	}
 }
