@@ -191,7 +191,7 @@ func (s *Server) AnnounceLeadership() {
 	// Initialize the other servers's indexes
 	for idx := range s.Nodes.Addresses {
 		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
-		s.Raft.MatchIndex[idx] = 0
+		s.Raft.MatchIndex[idx] = -1
 	}
 
 	// create a goroutine which sends periodic heartbeats

@@ -19,7 +19,7 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 
 	} else {
 		if s.Raft.LeaderId == -1 {
-			fmt.Printf("No leader to send command to, aborting...")
+			fmt.Printf("No leader to send command to, aborting...\n")
 			return
 		}
 
@@ -88,7 +88,7 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 	s.Raft.LeaderId = lId
 
 	// if len(message.Entries) > 0 {
-	// fmt.Printf("Received leader Log: %v\n", message.Entries)
+	// 	fmt.Printf("leader msg: %v\n", message)
 	// }
 
 	// If the requesting leader's term is behind ours,
@@ -116,12 +116,15 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		return
 	}
 
+	// We have a successful request, and will respond successfully
+
+	// copy the leader's commit index (-1 because uints)
+	s.Raft.CommitIndex = int(message.LeaderCommit) - 1
+
 	for _, entry := range message.Entries {
 		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
-		s.Raft.CommitIndex = int(message.LeaderCommit) - 1
-		// s.Raft.CommitIndex += 1
 	}
 	s.sendAppendEntriesRes(address, true)
 }
@@ -153,20 +156,20 @@ func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.A
 }
 
 func (s *Server) checkCommits() {
-	indexToCheck := s.Raft.CommitIndex + 1
+	nextCommitIndex := s.Raft.CommitIndex + 1
 
 	matched := 0
 	total := len(s.Raft.MatchIndex)
 
 	for _, matchIndex := range s.Raft.MatchIndex {
-		if matchIndex >= indexToCheck {
+		if matchIndex >= nextCommitIndex {
 			matched++
 		}
 	}
 
 	// If the majority have matched the index
 	if matched > total/2 {
-		s.Raft.CommitIndex = indexToCheck
+		s.Raft.CommitIndex = nextCommitIndex
 	}
 }
 
