@@ -206,12 +206,7 @@ func (s *Server) SendHeartbeats() {
 				continue
 			}
 
-			// if s.Raft.NextIndex[idx] < len(s.Raft.Logs) {
-			// }
-
-			// lastLogIndex := len(s.Raft.Logs) - 1
 			message := s.createAppendEntriesRequest(address)
-
 			s.SendMessage(address, message)
 		}
 
@@ -223,8 +218,8 @@ func (s *Server) SendHeartbeats() {
 func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
-	fmt.Printf("sId: %d\n", sId)
 	fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
+	fmt.Printf("s.Raft.MatchIndex: %v\n", s.Raft.MatchIndex)
 
 	prevLogIndex := s.Raft.NextIndex[sId] - 1
 	var prevLogTerm uint64 = 0

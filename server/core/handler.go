@@ -15,6 +15,7 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 		// Command is either from server or client
 		newLog := Log{Term: s.Raft.CurrentTerm, Index: len(s.Raft.Logs), Command: cmd}
 		s.Raft.Logs = append(s.Raft.Logs, newLog)
+		s.Raft.MatchIndex[s.Info.Id]++ // Increment our server's matchIndex
 
 	} else {
 		if s.Raft.LeaderId == -1 {
@@ -119,7 +120,8 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
-		s.Raft.CommitIndex += 1
+		s.Raft.CommitIndex = int(message.LeaderCommit)
+		// s.Raft.CommitIndex += 1
 	}
 	s.sendAppendEntriesRes(address, true)
 }
@@ -142,11 +144,30 @@ func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.A
 			s.Raft.NextIndex[sId]++
 		}
 
+		s.checkCommits()
+
 	} else {
 		s.Raft.NextIndex[sId]--
 		// Send another request with a decremented prevIndex and prevTerm.
 	}
+}
 
+func (s *Server) checkCommits() {
+	indexToCheck := s.Raft.CommitIndex + 1
+
+	matched := 0
+	total := len(s.Raft.MatchIndex)
+
+	for _, matchIndex := range s.Raft.MatchIndex {
+		if matchIndex >= indexToCheck {
+			matched++
+		}
+	}
+
+	// If the majority have matched the index
+	if matched > total/2 {
+		s.Raft.CommitIndex = indexToCheck
+	}
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
