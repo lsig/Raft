@@ -146,7 +146,11 @@ func (s *Server) CommandLineInterface() {
 		case command == "suspend":
 			s.HandleSuspendCommand()
 		case command == "timeout":
-			s.Timer.Reset(0)
+			if s.State == Failed {
+				fmt.Printf("server is down, run 'resume' to restart it")
+			} else {
+				s.Timer.Reset(0)
+			}
 		}
 	}
 }
@@ -220,8 +224,8 @@ func (s *Server) SendHeartbeats() {
 func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
-	fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
-	fmt.Printf("s.Raft.MatchIndex: %v\n", s.Raft.MatchIndex)
+	// fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
+	// fmt.Printf("s.Raft.MatchIndex: %v\n", s.Raft.MatchIndex)
 
 	prevLogIndex := s.Raft.NextIndex[sId] - 1
 	var prevLogTerm uint64 = 0
