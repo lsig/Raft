@@ -188,6 +188,12 @@ func (s *Server) AnnounceLeadership() {
 	// Guess what... I'm the leader now 😎
 	s.Raft.LeaderId = s.Info.Id
 
+	// Initialize the other servers's indexes
+	for idx := range s.Nodes.Addresses {
+		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
+		s.Raft.MatchIndex[idx] = 0
+	}
+
 	// create a goroutine which sends periodic heartbeats
 	go s.SendHeartbeats()
 }
