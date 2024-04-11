@@ -193,6 +193,8 @@ func (s *Server) AnnounceLeadership() {
 		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
 		s.Raft.MatchIndex[idx] = -1
 	}
+	// MatchIndex is length of log minus 1
+	s.Raft.MatchIndex[s.Info.Id] = len(s.Raft.Logs) - 1
 
 	// create a goroutine which sends periodic heartbeats
 	go s.SendHeartbeats()

@@ -143,10 +143,10 @@ func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.A
 
 		if logsLen > serverNextIndex {
 			// we had a log to send to the server, which it accepted
-			s.Raft.MatchIndex[sId]++
 			s.Raft.NextIndex[sId]++
 		}
 
+		s.Raft.MatchIndex[sId] = s.Raft.NextIndex[sId] - 1
 		s.checkCommits()
 
 	} else {
