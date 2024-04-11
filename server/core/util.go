@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	miniraft "github.com/lsig/Raft/server/pb"
+	"github.com/lsig/Raft/server/util"
 )
 
 func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
@@ -52,6 +53,9 @@ func (s *Server) ChangeState(newState State) {
 }
 
 func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
+	// updating terms means resetting timer
+	s.Timer.Reset(util.GetRandomTimeout())
+
 	// update current term
 	s.Raft.CurrentTerm = newTerm
 
@@ -62,4 +66,37 @@ func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
 	for idx := range s.Nodes.Addresses {
 		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
 	}
+}
+
+func (s *Server) isCandidateValid(message *miniraft.RequestVoteRequest) (bool, error) {
+	// Candidate's term can't be lower than ours
+	if message.Term < s.Raft.CurrentTerm {
+		return false, fmt.Errorf("candidate's term is lower")
+	}
+
+	// We can only vote for one candidate per term
+	if message.Term == s.Raft.CurrentTerm {
+		// We can resend the validation to the correct candidate if it didn't arrive
+		if message.CandidateName == fmt.Sprint(s.Raft.VotedFor) {
+			return true, nil
+		} else {
+			return false, fmt.Errorf("already voted this term")
+		}
+	}
+
+	// candidate can't have fewer logs than us
+	if len(s.Raft.Logs)-1 > int(message.LastLogIndex) {
+		return false, fmt.Errorf("candidate is missing logs")
+	}
+
+	// candidate can't have its oldest log be less than ours
+	var lastLogTerm uint64 = 0
+	if len(s.Raft.Logs) > 0 {
+		lastLogTerm = uint64(s.Raft.Logs[len(s.Raft.Logs)-1].Term)
+	}
+	if lastLogTerm > message.LastLogTerm {
+		return false, fmt.Errorf("candidate has older logs")
+	}
+
+	return true, nil
 }

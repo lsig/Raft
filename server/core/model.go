@@ -90,7 +90,7 @@ func NewServer(address string, nodes []string) *Server {
 		VotedFor:    -1,
 		Votes:       map[uint64][]int{},
 		Logs:        []Log{},
-		CommitIndex: 0,
+		CommitIndex: -1,
 		LastApplied: 0,
 		NextIndex:   make([]int, nodeInfo.Len),
 		MatchIndex:  make([]int, nodeInfo.Len),

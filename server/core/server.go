@@ -145,6 +145,12 @@ func (s *Server) CommandLineInterface() {
 			s.HandleResumeCommand()
 		case command == "suspend":
 			s.HandleSuspendCommand()
+		case command == "timeout":
+			if s.State == Failed {
+				fmt.Printf("server is down, run 'resume' to restart it")
+			} else {
+				s.Timer.Reset(0)
+			}
 		}
 	}
 }
@@ -186,6 +192,14 @@ func (s *Server) AnnounceLeadership() {
 	// Guess what... I'm the leader now 😎
 	s.Raft.LeaderId = s.Info.Id
 
+	// Initialize the other servers's indexes
+	for idx := range s.Nodes.Addresses {
+		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
+		s.Raft.MatchIndex[idx] = -1
+	}
+	// MatchIndex is length of log minus 1
+	s.Raft.MatchIndex[s.Info.Id] = len(s.Raft.Logs) - 1
+
 	// create a goroutine which sends periodic heartbeats
 	go s.SendHeartbeats()
 }
@@ -198,12 +212,7 @@ func (s *Server) SendHeartbeats() {
 				continue
 			}
 
-			// if s.Raft.NextIndex[idx] < len(s.Raft.Logs) {
-			// }
-
-			// lastLogIndex := len(s.Raft.Logs) - 1
 			message := s.createAppendEntriesRequest(address)
-
 			s.SendMessage(address, message)
 		}
 
@@ -215,7 +224,8 @@ func (s *Server) SendHeartbeats() {
 func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
-	fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
+	// fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
+	// fmt.Printf("s.Raft.MatchIndex: %v\n", s.Raft.MatchIndex)
 
 	prevLogIndex := s.Raft.NextIndex[sId] - 1
 	var prevLogTerm uint64 = 0
@@ -229,29 +239,30 @@ func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 		prevLogTerm = s.Raft.Logs[prevLogIndex].Term
 	}
 
+	// Find the next log to send to the server, if there exists one
 	logEntries := []*miniraft.LogEntry{}
-	if s.Raft.MatchIndex[sId] == len(s.Raft.Logs)-1 {
-		logEntries = append(logEntries, s.Raft.Logs[len(s.Raft.Logs)-1].ToLogEntry())
+	if s.Raft.NextIndex[sId] < len(s.Raft.Logs) {
+		logEntries = append(logEntries, s.Raft.Logs[s.Raft.NextIndex[sId]].ToLogEntry())
 	}
 
 	appendEntriesRequest := &miniraft.AppendEntriesRequest{
 		Term:         s.Raft.CurrentTerm,
 		PrevLogIndex: uint64(prevLogIndex),
 		PrevLogTerm:  prevLogTerm,
-		LeaderCommit: uint64(s.Raft.CommitIndex),
+		LeaderCommit: uint64(s.Raft.CommitIndex) + 1,
 		LeaderId:     fmt.Sprint(s.Info.Id),
 		Entries:      logEntries,
 	}
 
 	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: appendEntriesRequest}}
 
-	fmt.Printf("\nmessage:\n")
-	fmt.Printf("Term: %v\n", appendEntriesRequest.Term)
-	fmt.Printf("PrevLogIndex: %v\n", appendEntriesRequest.PrevLogIndex)
-	fmt.Printf("PrevLogTerm: %v\n", appendEntriesRequest.PrevLogTerm)
-	fmt.Printf("LeaderCommit: %v\n", appendEntriesRequest.LeaderCommit)
-	fmt.Printf("LeaderId: %v\n", appendEntriesRequest.LeaderId)
-	fmt.Printf("Entries: %v\n", appendEntriesRequest.Entries)
+	// fmt.Printf("\nmessage:\n")
+	// fmt.Printf("Term: %v\n", appendEntriesRequest.Term)
+	// fmt.Printf("PrevLogIndex: %v\n", appendEntriesRequest.PrevLogIndex)
+	// fmt.Printf("PrevLogTerm: %v\n", appendEntriesRequest.PrevLogTerm)
+	// fmt.Printf("LeaderCommit: %v\n", appendEntriesRequest.LeaderCommit)
+	// fmt.Printf("LeaderId: %v\n", appendEntriesRequest.LeaderId)
+	// fmt.Printf("Entries: %v\n", appendEntriesRequest.Entries)
 
 	return message
 }
