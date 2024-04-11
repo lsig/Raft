@@ -252,13 +252,13 @@ func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 
 	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: appendEntriesRequest}}
 
-	fmt.Printf("\nmessage:\n")
-	fmt.Printf("Term: %v\n", appendEntriesRequest.Term)
-	fmt.Printf("PrevLogIndex: %v\n", appendEntriesRequest.PrevLogIndex)
-	fmt.Printf("PrevLogTerm: %v\n", appendEntriesRequest.PrevLogTerm)
-	fmt.Printf("LeaderCommit: %v\n", appendEntriesRequest.LeaderCommit)
-	fmt.Printf("LeaderId: %v\n", appendEntriesRequest.LeaderId)
-	fmt.Printf("Entries: %v\n", appendEntriesRequest.Entries)
+	// fmt.Printf("\nmessage:\n")
+	// fmt.Printf("Term: %v\n", appendEntriesRequest.Term)
+	// fmt.Printf("PrevLogIndex: %v\n", appendEntriesRequest.PrevLogIndex)
+	// fmt.Printf("PrevLogTerm: %v\n", appendEntriesRequest.PrevLogTerm)
+	// fmt.Printf("LeaderCommit: %v\n", appendEntriesRequest.LeaderCommit)
+	// fmt.Printf("LeaderId: %v\n", appendEntriesRequest.LeaderId)
+	// fmt.Printf("Entries: %v\n", appendEntriesRequest.Entries)
 
 	return message
 }

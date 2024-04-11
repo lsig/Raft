@@ -32,36 +32,34 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 }
 
 func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVoteRequest) {
-	fmt.Printf("received RVR - ")
-
 	var granted bool
 	// Only grant votes if the received term is new
 	// or if the original term winner resends a request
-	if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && s.Raft.CurrentTerm >= message.Term {
-		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
-		granted = false
-	} else if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && len(s.Raft.Logs) > 0 && s.Raft.Logs[len(s.Raft.Logs)-1].Term > message.LastLogTerm {
-		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
-		granted = false
-	} else if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && len(s.Raft.Logs)-1 > int(message.LastLogIndex) {
-		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
+	// and the candidate is up-to-date
+
+	isValid, reason := s.isCandidateValid(message)
+
+	if !isValid {
+		fmt.Printf("Error: %s\n", reason.Error())
+
+		if message.Term > s.Raft.CurrentTerm {
+			s.State = Follower
+			s.UpdateTerm(message.Term, -1) // we haven't casted a vote for this term
+		}
+
 		granted = false
 	} else {
-		// TODO check whether requesting candiate is up-to-date
+		// The candidate is valid, we accept them as a leader
 
 		// Become a follower
-		if s.State == Leader || s.State == Candidate {
-			s.State = Follower
-		}
+		s.State = Follower
 
 		// this term is strictly higher than the server's current term, due to the check above
 		newTerm := message.Term
 		newVote, _ := strconv.Atoi(message.CandidateName)
-		s.Timer.Reset(util.GetRandomTimeout())
 
 		s.UpdateTerm(newTerm, newVote)
-		s.Raft.VotedFor = newVote
-		fmt.Printf("Entered term %d! Voted casted to %v!\n", newTerm, newVote)
+		fmt.Printf("Enter term %d! Voted %v!\n", newTerm, newVote)
 		granted = true
 	}
 
@@ -72,7 +70,7 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 	serverIndex := util.FindServerId(s.Nodes.Addresses, address)
 
 	if message.VoteGranted {
-		fmt.Printf("Vote granted by %s\n", address)
+		// fmt.Printf("Vote granted by %s\n", address)
 
 		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = 1
 
@@ -136,7 +134,7 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 }
 
 func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.AppendEntriesResponse) {
-	fmt.Printf("\nreceived AE-Response:\nSuccess: %v\nTerm: %v\n", message.Success, message.Term)
+	// fmt.Printf("\nreceived AE-Response:\nSuccess: %v\nTerm: %v\n", message.Success, message.Term)
 
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
@@ -188,7 +186,7 @@ func (s *Server) sendVoteResponse(address string, granted bool) {
 		},
 	}}
 
-	fmt.Printf("sending VoteResponse to %s\n", address)
+	// fmt.Printf("sending VoteResponse to %s\n", address)
 	s.SendMessage(address, message)
 }
 
