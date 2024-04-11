@@ -86,30 +86,45 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 	lId, _ := strconv.Atoi(message.LeaderId)
 	s.Raft.LeaderId = lId
 
-	if len(message.Entries) > 0 {
-		fmt.Printf("Received leader Log: %v\n", message.Entries)
-	}
+	// if len(message.Entries) > 0 {
+	// fmt.Printf("Received leader Log: %v\n", message.Entries)
+	// }
 
+	// If the requesting leader's term is behind ours,
 	if message.Term < s.Raft.CurrentTerm {
+		fmt.Println("denying AER, leader's term is behind")
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
 
-	if len(s.Raft.Logs)-1 < int(message.PrevLogIndex) {
+	// If my logs are more than the acceptable 1 behind the leader,
+	if max(len(s.Raft.Logs)-1, 0) < int(message.PrevLogIndex) {
+		fmt.Println("denying AER, my logs are too far behind")
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
 
-	if s.Raft.Logs[message.PrevLogIndex].Term != message.PrevLogTerm {
+	// if my last log's term is different from the leader's,
+	var lastLogsTerm uint64
+	if len(s.Raft.Logs) > int(message.PrevLogIndex) {
+		lastLogsTerm = s.Raft.Logs[message.PrevLogIndex].Term
+	}
+	if lastLogsTerm != message.PrevLogTerm {
+		fmt.Printf("denying AER, my last log's term (%v), is different than the leader's (%v)\n", lastLogsTerm, message.PrevLogTerm)
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
 
 	for _, entry := range message.Entries {
+		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
 	}
 	s.sendAppendEntriesRes(address, true)
+}
+
+func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.AppendEntriesResponse) {
+	fmt.Printf("\nreceived AE-Response:\n%v\n", message)
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
@@ -132,7 +147,8 @@ func (s *Server) sendAppendEntriesRes(address string, success bool) {
 			Success: success,
 		},
 	}}
-	fmt.Printf("Sending AppendEntriesResponse to %s\n", address)
+
+	// fmt.Printf("Sending AppendEntriesResponse to %s\n", address)
 	s.SendMessage(address, message)
 }
 

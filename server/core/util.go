@@ -60,6 +60,6 @@ func (s *Server) UpdateTerm(newTerm uint64, newVote int) {
 
 	// This might only be useful if the server is the leader
 	for idx := range s.Nodes.Addresses {
-		s.Raft.NextIndex[idx] = len(s.Raft.Logs) + 1
+		s.Raft.NextIndex[idx] = len(s.Raft.Logs)
 	}
 }

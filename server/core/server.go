@@ -110,7 +110,8 @@ func (s *Server) MessageProcessing() {
 			}
 			s.HandleAppendEntriesRequest(packet.Address, msg.AppendEntriesRequest)
 		case *miniraft.Raft_AppendEntriesResponse:
-			continue
+			// This should only occur if this server is the leader, no reason to check whether s.State == Failed
+			s.HandleAppendEntriesResponse(packet.Address, msg.AppendEntriesResponse)
 		}
 	}
 }
@@ -214,32 +215,43 @@ func (s *Server) SendHeartbeats() {
 func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
+	fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
+
 	prevLogIndex := s.Raft.NextIndex[sId] - 1
+	var prevLogTerm uint64 = 0
+
+	// if the node hasn't any logs, keep both prev at zero
 	if prevLogIndex < 0 {
 		prevLogIndex = 0
+		prevLogTerm = 0
+		// only fetch last log's term if a last log exists
+	} else if len(s.Raft.Logs)-1 >= prevLogIndex {
+		prevLogTerm = s.Raft.Logs[prevLogIndex].Term
 	}
 
 	logEntries := []*miniraft.LogEntry{}
-
 	if s.Raft.MatchIndex[sId] == len(s.Raft.Logs)-1 {
 		logEntries = append(logEntries, s.Raft.Logs[len(s.Raft.Logs)-1].ToLogEntry())
 	}
 
-	var prevLogTerm uint64 = 0
-
-	// only fetch last log's term if a last log exists
-	if len(s.Raft.Logs)-1 >= prevLogIndex {
-		prevLogTerm = s.Raft.Logs[prevLogIndex].Term
-	}
-
-	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: &miniraft.AppendEntriesRequest{
+	appendEntriesRequest := &miniraft.AppendEntriesRequest{
 		Term:         s.Raft.CurrentTerm,
 		PrevLogIndex: uint64(prevLogIndex),
 		PrevLogTerm:  prevLogTerm,
 		LeaderCommit: uint64(s.Raft.CommitIndex),
 		LeaderId:     fmt.Sprint(s.Info.Id),
 		Entries:      logEntries,
-	}}}
+	}
+
+	message := &miniraft.Raft{Message: &miniraft.Raft_AppendEntriesRequest{AppendEntriesRequest: appendEntriesRequest}}
+
+	fmt.Printf("\nmessage:\n")
+	fmt.Printf("Term: %v\n", appendEntriesRequest.Term)
+	fmt.Printf("PrevLogIndex: %v\n", appendEntriesRequest.PrevLogIndex)
+	fmt.Printf("PrevLogTerm: %v\n", appendEntriesRequest.PrevLogTerm)
+	fmt.Printf("LeaderCommit: %v\n", appendEntriesRequest.LeaderCommit)
+	fmt.Printf("LeaderId: %v\n", appendEntriesRequest.LeaderId)
+	fmt.Printf("Entries: %v\n", appendEntriesRequest.Entries)
 
 	return message
 }
