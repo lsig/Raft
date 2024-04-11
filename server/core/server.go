@@ -243,7 +243,7 @@ func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 		Term:         s.Raft.CurrentTerm,
 		PrevLogIndex: uint64(prevLogIndex),
 		PrevLogTerm:  prevLogTerm,
-		LeaderCommit: uint64(s.Raft.CommitIndex),
+		LeaderCommit: uint64(s.Raft.CommitIndex) + 1,
 		LeaderId:     fmt.Sprint(s.Info.Id),
 		Entries:      logEntries,
 	}
