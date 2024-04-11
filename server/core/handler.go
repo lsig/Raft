@@ -40,6 +40,12 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 	if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && s.Raft.CurrentTerm >= message.Term {
 		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
 		granted = false
+	} else if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && len(s.Raft.Logs) > 0 && s.Raft.Logs[len(s.Raft.Logs)-1].Term > message.LastLogTerm {
+		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
+		granted = false
+	} else if fmt.Sprint(s.Raft.VotedFor) != message.CandidateName && len(s.Raft.Logs)-1 > int(message.LastLogIndex) {
+		fmt.Printf("Already voted to %v...\n", s.Raft.VotedFor)
+		granted = false
 	} else {
 		// TODO check whether requesting candiate is up-to-date
 
