@@ -145,6 +145,8 @@ func (s *Server) CommandLineInterface() {
 			s.HandleResumeCommand()
 		case command == "suspend":
 			s.HandleSuspendCommand()
+		case command == "timeout":
+			s.Timer.Reset(0)
 		}
 	}
 }
@@ -215,6 +217,7 @@ func (s *Server) SendHeartbeats() {
 func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 	sId := util.FindServerId(s.Nodes.Addresses, address)
 
+	fmt.Printf("sId: %d\n", sId)
 	fmt.Printf("s.Raft.NextIndex: %v\n", s.Raft.NextIndex)
 
 	prevLogIndex := s.Raft.NextIndex[sId] - 1
@@ -229,9 +232,10 @@ func (s *Server) createAppendEntriesRequest(address string) *miniraft.Raft {
 		prevLogTerm = s.Raft.Logs[prevLogIndex].Term
 	}
 
+	// Find the next log to send to the server, if there exists one
 	logEntries := []*miniraft.LogEntry{}
-	if s.Raft.MatchIndex[sId] == len(s.Raft.Logs)-1 {
-		logEntries = append(logEntries, s.Raft.Logs[len(s.Raft.Logs)-1].ToLogEntry())
+	if s.Raft.NextIndex[sId] < len(s.Raft.Logs) {
+		logEntries = append(logEntries, s.Raft.Logs[s.Raft.NextIndex[sId]].ToLogEntry())
 	}
 
 	appendEntriesRequest := &miniraft.AppendEntriesRequest{

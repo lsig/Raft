@@ -119,12 +119,33 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
+		s.Raft.CommitIndex += 1
 	}
 	s.sendAppendEntriesRes(address, true)
 }
 
 func (s *Server) HandleAppendEntriesResponse(address string, message *miniraft.AppendEntriesResponse) {
-	fmt.Printf("\nreceived AE-Response:\n%v\n", message)
+	fmt.Printf("\nreceived AE-Response:\nSuccess: %v\nTerm: %v\n", message.Success, message.Term)
+
+	sId := util.FindServerId(s.Nodes.Addresses, address)
+
+	serverNextIndex := s.Raft.NextIndex[sId]
+	// serverMatchIndex := s.Raft.MatchIndex[sId]
+	logsLen := len(s.Raft.Logs)
+
+	if message.Success {
+		// Check whether we have to increment the responding server's nextIndex and matchIndex.
+
+		if logsLen > serverNextIndex {
+			// we had a log to send to the server, which it accepted
+			s.Raft.NextIndex[sId]++
+		}
+
+	} else {
+		s.Raft.NextIndex[sId]--
+		// Send another request with a decremented prevIndex and prevTerm.
+	}
+
 }
 
 func (s *Server) sendVoteResponse(address string, granted bool) {
