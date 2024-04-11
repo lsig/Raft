@@ -120,7 +120,7 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
-		s.Raft.CommitIndex = int(message.LeaderCommit) -1
+		s.Raft.CommitIndex = int(message.LeaderCommit) - 1
 		// s.Raft.CommitIndex += 1
 	}
 	s.sendAppendEntriesRes(address, true)
