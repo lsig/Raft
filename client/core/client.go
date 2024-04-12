@@ -7,6 +7,7 @@ import (
 	"net"
 	"os"
 	"strings"
+	"unicode"
 
 	miniraft "github.com/lsig/Raft/client/pb"
 	"google.golang.org/protobuf/proto"
@@ -69,9 +70,23 @@ func (c *Client) HandleUserInput() {
 			break
 		}
 
+		if !isAlphanumeric(message) {
+			fmt.Printf("message '%s' must be alphanumeric...\n", message)
+			continue
+		}
+
 		err = c.SendMessage(message)
 		if err != nil {
 			fmt.Printf("error sending msg: %s\n", err.Error())
 		}
 	}
+}
+
+func isAlphanumeric(str string) bool {
+	for _, char := range str {
+		if !unicode.IsLetter(char) && !unicode.IsNumber(char) {
+			return false
+		}
+	}
+	return true
 }
