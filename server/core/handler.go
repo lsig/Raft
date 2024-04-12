@@ -10,7 +10,7 @@ import (
 )
 
 func (s *Server) HandleClientCommand(address string, cmd string) {
-	fmt.Printf("Received command: %s\n", cmd)
+	// fmt.Printf("Received command: %s\n", cmd)
 
 	if s.State == Leader {
 		// Command is either from server or client
@@ -20,7 +20,7 @@ func (s *Server) HandleClientCommand(address string, cmd string) {
 
 	} else {
 		if s.Raft.LeaderId == -1 {
-			fmt.Printf("No leader to send command to, aborting...\n")
+			// fmt.Printf("No leader to send command to, aborting...\n")
 			return
 		}
 
@@ -38,10 +38,10 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 	// or if the original term winner resends a request
 	// and the candidate is up-to-date
 
-	isValid, reason := s.isCandidateValid(message)
+	isValid, _ := s.isCandidateValid(message)
 
 	if !isValid {
-		fmt.Printf("Error: %s\n", reason.Error())
+		// fmt.Printf("Error: %s\n", reason.Error())
 
 		if message.Term > s.Raft.CurrentTerm {
 			s.State = Follower
@@ -60,7 +60,7 @@ func (s *Server) HandleVoteRequest(address string, message *miniraft.RequestVote
 		newVote, _ := strconv.Atoi(message.CandidateName)
 
 		s.UpdateTerm(newTerm, newVote)
-		fmt.Printf("Enter term %d! Voted %v!\n", newTerm, newVote)
+		// fmt.Printf("Enter term %d! Voted %v!\n", newTerm, newVote)
 		granted = true
 	}
 
@@ -82,11 +82,11 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 		// check whether the responding server's Term is higher...
 		// if so, we must update the term and restart the timeout
 		if message.Term > s.Raft.CurrentTerm || s.State != Candidate {
-			fmt.Printf("oops, I'm way outta line, going to term %v...\n", message.Term)
+			// fmt.Printf("oops, I'm way outta line, going to term %v...\n", message.Term)
 			s.State = Follower
 			s.UpdateTerm(message.Term, -1)
 		} else {
-			fmt.Printf("Vote NOT granted by %s\n", address)
+			// fmt.Printf("Vote NOT granted by %s\n", address)
 			s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = -1
 		}
 
@@ -105,14 +105,14 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 
 	// If the requesting leader's term is behind ours,
 	if message.Term < s.Raft.CurrentTerm {
-		fmt.Println("denying AER, leader's term is behind")
+		// fmt.Println("denying AER, leader's term is behind")
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
 
 	// If my logs are more than the acceptable 1 behind the leader,
 	if max(len(s.Raft.Logs)-1, 0) < int(message.PrevLogIndex) {
-		fmt.Println("denying AER, my logs are too far behind")
+		// fmt.Println("denying AER, my logs are too far behind")
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
@@ -123,14 +123,14 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		lastLogsTerm = s.Raft.Logs[message.PrevLogIndex].Term
 	}
 	if lastLogsTerm != message.PrevLogTerm {
-		fmt.Printf("denying AER, my last log's term (%v), is different than the leader's (%v)\n", lastLogsTerm, message.PrevLogTerm)
+		// fmt.Printf("denying AER, my last log's term (%v), is different than the leader's (%v)\n", lastLogsTerm, message.PrevLogTerm)
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
 	// At this point, we have a successful request and will respond successfully
 
 	for _, entry := range message.Entries {
-		fmt.Printf("received log: %v\n", entry)
+		// fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
 	}

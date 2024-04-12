@@ -1,7 +1,7 @@
 # Distributed Consensus - Raft
 
-Welcome to the Raft implementation of group 5 in the course T-419-CADP at Reykjavik University. 
-Below are instruction on how to run the code, what commands are avaible and more. 
+Welcome to the Raft implementation of group 5 in the course T-419-CADP at Reykjavik University.
+Below are instruction on how to run the code, what commands are avaible and more.
 
 ## Server
 
@@ -23,7 +23,6 @@ suspend: Suspend a process, moves it to a failed state
 
 timeout: Artificially timesout the process, moves it to a candidate state
 
-
 ## Client
 
 ```bash
@@ -38,17 +37,21 @@ exit: exits the program
 
 ## Debug mode
 
-We use a debug value for our timeouts to better see the functionality of the algorithm. 
+We use a debug value for our timeouts to better see the functionality of the algorithm.
 
-Adjust this scale to fit your purpose, or remove it all together. This function can be found in the 
-util folder. 
+Adjust this scale to fit your purpose, or remove it all together. This function can be found in the
+util folder.
 
 ```go
 func GetRandomTimeout() time.Duration {
-	debugScale := 200
+	debugScale := 1
 	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
 }
 ```
+
+## Report
+
+The pdf report is included in the repository [here](./Reykjavik_University_CADP_Distributed_Consensus.pdf).
 
 ## Acknowledgements
 

@@ -32,22 +32,22 @@ func (s *Server) CreateVoteRequest() *miniraft.RequestVoteRequest {
 }
 
 func (s *Server) ChangeState(newState State) {
-	var newStateName string
-	switch newState {
-	case Candidate:
-		newStateName = "candidate"
-	case Failed:
-		newStateName = "failed"
-	case Follower:
-		newStateName = "follower"
-	case Leader:
-		newStateName = "leader"
-	}
+	// var newStateName string
+	// switch newState {
+	// case Candidate:
+	// 	newStateName = "candidate"
+	// case Failed:
+	// 	newStateName = "failed"
+	// case Follower:
+	// 	newStateName = "follower"
+	// case Leader:
+	// 	newStateName = "leader"
+	// }
 
-	// only announce the new state if its different than the old
-	if newState != s.State {
-		fmt.Printf("New state: %v\n", newStateName)
-	}
+	// // only announce the new state if its different than the old
+	// if newState != s.State {
+	// 	fmt.Printf("New state: %v\n", newStateName)
+	// }
 
 	s.State = newState
 }

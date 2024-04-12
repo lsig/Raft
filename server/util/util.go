@@ -47,7 +47,7 @@ func AppendToFile(filename, text string) error {
 }
 
 func GetRandomTimeout() time.Duration {
-	debugScale := 200
+	debugScale := 1
 	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
 }
 

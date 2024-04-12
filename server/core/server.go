@@ -165,7 +165,7 @@ func (s *Server) WaitForTimeout() {
 		// Timed out, increment term
 		s.UpdateTerm(s.Raft.CurrentTerm+1, s.Info.Id)
 
-		fmt.Printf("Timed out - entering term %d\n", s.Raft.CurrentTerm)
+		// fmt.Printf("Timed out - entering term %d\n", s.Raft.CurrentTerm)
 		s.ChangeState(Candidate)
 
 		s.Raft.Votes[s.Raft.CurrentTerm] = make([]int, s.Nodes.Len)
