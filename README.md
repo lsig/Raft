@@ -40,7 +40,8 @@ exit: exits the program
 
 We use a debug value for our timeouts to better see the functionality of the algorithm. 
 
-Adjust this scale to fit your purpose, or remove it all together.
+Adjust this scale to fit your purpose, or remove it all together. This function can be found in the 
+util folder. 
 
 ```go
 func GetRandomTimeout() time.Duration {
