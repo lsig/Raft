@@ -78,10 +78,17 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 			s.AnnounceLeadership()
 		}
 	} else {
-		// TODO check whether the responding server's Term is higher...
+		// check whether the responding server's Term is higher...
 		// if so, we must update the term and restart the timeout
-		fmt.Printf("Vote NOT granted by %s\n", address)
-		s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = -1
+		if message.Term > s.Raft.CurrentTerm {
+			fmt.Printf("oops, I'm way outta line, going to term %v...\n", message.Term)
+			s.State = Follower
+			s.UpdateTerm(message.Term, -1)
+		} else {
+			fmt.Printf("Vote NOT granted by %s\n", address)
+			s.Raft.Votes[s.Raft.CurrentTerm][serverIndex] = -1
+		}
+
 	}
 	// fmt.Printf("my votes: %v\n", s.Raft.Votes[s.Raft.CurrentTerm])
 }

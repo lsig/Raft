@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"math/rand/v2"
+	"net"
 	"os"
 	"strings"
 	"time"
@@ -52,8 +53,12 @@ func GetRandomTimeout() time.Duration {
 
 func FindServerId(addresses []string, address string) uint64 {
 	var serverIndex uint64
+
+	addr, _ := net.ResolveUDPAddr("udp", address)
+
 	for idx, nodeAddr := range addresses {
-		if address == nodeAddr {
+		nAddr, _ := net.ResolveUDPAddr("udp", nodeAddr)
+		if addr.String() == nAddr.String() {
 			serverIndex = uint64(idx)
 			break
 		}
