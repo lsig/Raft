@@ -36,6 +36,19 @@ go run . <server-host>:<server-port>
 
 exit: exits the program
 
+## Debug mode
+
+We use a debug value for our timeouts to better see the functionality of the algorithm. 
+
+Adjust this scale to fit your purpose, or remove it all together.
+
+```go
+func GetRandomTimeout() time.Duration {
+	debugScale := 200
+	return time.Duration(rand.IntN(300*debugScale)+150*debugScale) * time.Millisecond
+}
+```
+
 ## Acknowledgements
 
 [Converting bytes to string](https://golangdocs.com/golang-byte-array-to-string)
