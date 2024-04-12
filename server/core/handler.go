@@ -3,6 +3,7 @@ package core
 import (
 	"fmt"
 	"strconv"
+	"strings"
 
 	miniraft "github.com/lsig/Raft/server/pb"
 	"github.com/lsig/Raft/server/util"
@@ -126,17 +127,26 @@ func (s *Server) HandleAppendEntriesRequest(address string, message *miniraft.Ap
 		s.sendAppendEntriesRes(address, false)
 		return
 	}
-
-	// We have a successful request, and will respond successfully
-
-	// copy the leader's commit index (-1 because uints)
-	s.Raft.CommitIndex = int(message.LeaderCommit) - 1
+	// At this point, we have a successful request and will respond successfully
 
 	for _, entry := range message.Entries {
 		fmt.Printf("received log: %v\n", entry)
 		log := Log{}
 		s.Raft.Logs = append(s.Raft.Logs, log.FromLogEntry(entry))
 	}
+
+	// copy the leader's commit index (-1 because uints)
+	newCommitIndex := int(message.LeaderCommit) - 1
+
+	// If there are unwritten committed logs, write them
+	if s.Raft.CommitIndex < newCommitIndex {
+		for i := s.Raft.CommitIndex + 1; i <= newCommitIndex; i++ {
+			filename := fmt.Sprint(strings.ReplaceAll(s.Info.Address, ":", "-"), ".log")
+			util.AppendToFile(filename, s.Raft.Logs[i].String())
+		}
+		s.Raft.CommitIndex = newCommitIndex
+	}
+
 	s.sendAppendEntriesRes(address, true)
 }
 
@@ -181,6 +191,8 @@ func (s *Server) checkCommits() {
 	// If the majority have matched the index
 	if matched > total/2 {
 		s.Raft.CommitIndex = nextCommitIndex
+		filename := fmt.Sprint(strings.ReplaceAll(s.Info.Address, ":", "-"), ".log")
+		util.AppendToFile(filename, s.Raft.Logs[s.Raft.CommitIndex].String())
 	}
 }
 
