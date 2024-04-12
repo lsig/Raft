@@ -80,7 +80,7 @@ func (s *Server) HandleVoteResponse(address string, message *miniraft.RequestVot
 	} else {
 		// check whether the responding server's Term is higher...
 		// if so, we must update the term and restart the timeout
-		if message.Term > s.Raft.CurrentTerm {
+		if message.Term > s.Raft.CurrentTerm || s.State != Candidate {
 			fmt.Printf("oops, I'm way outta line, going to term %v...\n", message.Term)
 			s.State = Follower
 			s.UpdateTerm(message.Term, -1)
